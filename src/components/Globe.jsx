@@ -3,11 +3,40 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import lookup from 'country-code-lookup';
 
-export default function Globe({ onCountrySelect }) {
+export default function Globe({ selectedCountries = [], onCountrySelect }) {
     const svgRef = useRef();
     const tooltipRef = useRef();
+    const isRendered = useRef(false);
+
+    const selectedCountriesRef = useRef(selectedCountries);
+    const onCountrySelectRef = useRef(onCountrySelect);
 
     useEffect(() => {
+        selectedCountriesRef.current = selectedCountries;
+        onCountrySelectRef.current = onCountrySelect;
+        
+        if (svgRef.current) {
+            const svg = d3.select(svgRef.current);
+            svg.selectAll(".country")
+                .classed("is-selected", d => {
+                    return selectedCountries.some(c => c.name === d.properties.name);
+                })
+                .attr("fill", function() {
+                    return d3.select(this).classed("is-selected") ? "#bfdbfe" : "#EBE9FC";
+                })
+                .attr("stroke", function() {
+                    return d3.select(this).classed("is-selected") ? "#2563eb" : "#010104";
+                })
+                .attr("stroke-width", function() {
+                    return d3.select(this).classed("is-selected") ? "1.5" : "0.5";
+                });
+        }
+    }, [selectedCountries, onCountrySelect]);
+
+    useEffect(() => {
+        if (isRendered.current) return;
+        isRendered.current = true;
+
         const width = 800;
         const height = 600;
 
@@ -17,7 +46,6 @@ export default function Globe({ onCountrySelect }) {
             .style("height", "100%");
 
         svg.selectAll("*").remove(); // Clear on re-render
-
         // Add a background rect to catch events
         svg.append("rect")
             .attr("width", width)
@@ -69,9 +97,11 @@ export default function Globe({ onCountrySelect }) {
                 .attr("stroke-width", "0.5")
                 .style("cursor", "pointer")
                 .on("mouseover", function(event, d) {
+                    const isSelected = d3.select(this).classed("is-selected");
+
                     d3.select(this)
-                        .attr("fill", "#dcd9fa")
-                        .attr("stroke-width", "1.5");
+                        .attr("fill", isSelected ? "#93c5fd" : "#dcd9fa")
+                        .attr("stroke-width", isSelected ? "2" : "1.5");
                     
                     const countryName = d.properties.name;
                     let iso2 = null;
@@ -101,9 +131,11 @@ export default function Globe({ onCountrySelect }) {
                         .style("top", (event.clientY + 15) + "px");
                 })
                 .on("mouseout", function(event, d) {
+                    const isSelected = d3.select(this).classed("is-selected");
+
                     d3.select(this)
-                        .attr("fill", "#EBE9FC")
-                        .attr("stroke-width", "0.5");
+                        .attr("fill", isSelected ? "#bfdbfe" : "#EBE9FC")
+                        .attr("stroke-width", isSelected ? "1.5" : "0.5");
                     tooltip.style("opacity", 0);
                 })
                 .on("click", function(event, d) {
@@ -125,9 +157,24 @@ export default function Globe({ onCountrySelect }) {
                             iso3 = result.iso3;
                         }
                     }
-                    if (onCountrySelect) {
-                        onCountrySelect({ name: countryName, code: iso2, iso3: iso3 });
+                    if (onCountrySelectRef.current) {
+                        onCountrySelectRef.current({ name: countryName, code: iso2, iso3: iso3 });
                     }
+                });
+
+            // Initial selection check after drawing
+            svg.selectAll(".country")
+                .classed("is-selected", d => {
+                    return selectedCountriesRef.current.some(c => c.name === d.properties.name);
+                })
+                .attr("fill", function() {
+                    return d3.select(this).classed("is-selected") ? "#bfdbfe" : "#EBE9FC";
+                })
+                .attr("stroke", function() {
+                    return d3.select(this).classed("is-selected") ? "#2563eb" : "#010104";
+                })
+                .attr("stroke-width", function() {
+                    return d3.select(this).classed("is-selected") ? "1.5" : "0.5";
                 });
 
             // Drag behavior for rotation
@@ -171,7 +218,7 @@ export default function Globe({ onCountrySelect }) {
 
         });
 
-    }, [onCountrySelect]);
+    }, []);
 
     return (
         <div className="relative w-full h-full flex justify-center items-center overflow-hidden bg-white">

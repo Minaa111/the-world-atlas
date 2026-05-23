@@ -1,128 +1,199 @@
-import React, { useState } from "react";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import lookup from "country-code-lookup";
+import React, { useEffect, useRef } from 'react';
+import * as d3 from 'd3';
+import * as topojson from 'topojson-client';
+import lookup from 'country-code-lookup';
 
-const geoUrl = "https://unpkg.com/world-atlas@2.0.2/countries-110m.json";
+export default function Map({ selectedCountries = [], onCountrySelect }) {
+    const svgRef = useRef();
+    const tooltipRef = useRef();
+    const isRendered = useRef(false);
 
-function Map({ selectedCountries = [], onCountrySelect }) {
-    const [hoveredCountry, setHoveredCountry] = useState(null);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    // Keep refs of props to use inside d3 event handlers to avoid stale closures
+    const selectedCountriesRef = useRef(selectedCountries);
+    const onCountrySelectRef = useRef(onCountrySelect);
 
-    const handleMouseMove = (e) => {
-        setMousePos({ x: e.clientX, y: e.clientY });
-    };
-
-    const getCountryInfo = (geo) => {
-        const countryId = geo.id || geo.properties?.ISO_A3;
-        if (countryId) {
-            const result = lookup.byIso(String(countryId));
-            if (result) return { iso2: result.iso2, iso3: result.iso3 };
+    useEffect(() => {
+        selectedCountriesRef.current = selectedCountries;
+        onCountrySelectRef.current = onCountrySelect;
+        
+        // Update styling of countries when selectedCountries change
+        if (svgRef.current) {
+            const svg = d3.select(svgRef.current);
+            svg.selectAll(".country")
+                .classed("is-selected", d => {
+                    return selectedCountries.some(c => c.name === d.properties.name);
+                })
+                .attr("fill", function() {
+                    return d3.select(this).classed("is-selected") ? "#bfdbfe" : "#EBE9FC";
+                })
+                .attr("stroke", function() {
+                    return d3.select(this).classed("is-selected") ? "#2563eb" : "#010104";
+                })
+                .attr("stroke-width", function() {
+                    return d3.select(this).classed("is-selected") ? "1.5" : "0.5";
+                });
         }
-        const result = lookup.byCountry(geo.properties?.name);
-        return result ? { iso2: result.iso2, iso3: result.iso3 } : { iso2: null, iso3: null };
-    };
+    }, [selectedCountries, onCountrySelect]);
+
+    useEffect(() => {
+        if (isRendered.current) return;
+        isRendered.current = true;
+
+        const width = 1000;
+        const height = 600;
+
+        const svg = d3.select(svgRef.current)
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .style("width", "100%")
+            .style("height", "100%");
+
+        // Add a background rect to catch zoom/drag events
+        svg.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "transparent");
+
+        const g = svg.append("g");
+
+        // Use Natural Earth projection
+        const projection = d3.geoNaturalEarth1()
+            .scale(200)
+            .translate([width / 2, height / 2]);
+
+        const path = d3.geoPath().projection(projection);
+
+        // Add graticule (grid lines)
+        const graticule = d3.geoGraticule();
+        g.append("path")
+            .datum(graticule())
+            .attr("class", "graticule")
+            .attr("d", path)
+            .attr("fill", "none")
+            .attr("stroke", "#e5e7eb")
+            .attr("stroke-width", "0.5")
+            .attr("stroke-opacity", "0.5");
+
+        const tooltip = d3.select(tooltipRef.current);
+
+        d3.json("https://unpkg.com/world-atlas@2.0.2/countries-110m.json").then((world) => {
+            const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.properties.name !== "Antarctica");
+
+            g.selectAll(".country")
+                .data(countries)
+                .enter().append("path")
+                .attr("class", "country")
+                .attr("d", path)
+                .attr("fill", "#EBE9FC")
+                .attr("stroke", "#010104")
+                .attr("stroke-width", "0.5")
+                .style("cursor", "pointer")
+                .on("mouseover", function(event, d) {
+                    const isSelected = d3.select(this).classed("is-selected");
+                    
+                    d3.select(this)
+                        .attr("fill", isSelected ? "#93c5fd" : "#dcd9fa")
+                        .attr("stroke-width", isSelected ? "2" : "1.5");
+                    
+                    const countryName = d.properties.name;
+                    let iso2 = null;
+                    const countryId = d.id || d.properties?.ISO_A3;
+                    if (countryId) {
+                        const result = lookup.byIso(String(countryId));
+                        if (result) iso2 = result.iso2;
+                    }
+                    if (!iso2) {
+                        const result = lookup.byCountry(countryName);
+                        if (result) iso2 = result.iso2;
+                    }
+
+                    tooltip.style("opacity", 1)
+                        .html(`
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                ${iso2 ? `<img src="https://flagcdn.com/w40/${iso2.toLowerCase()}.png" width="24" style="border-radius:2px" />` : ''}
+                                <span>${countryName}</span>
+                            </div>
+                        `)
+                        .style("left", (event.clientX + 15) + "px")
+                        .style("top", (event.clientY + 15) + "px");
+                })
+                .on("mousemove", function(event) {
+                    tooltip
+                        .style("left", (event.clientX + 15) + "px")
+                        .style("top", (event.clientY + 15) + "px");
+                })
+                .on("mouseout", function(event, d) {
+                    const isSelected = d3.select(this).classed("is-selected");
+                    d3.select(this)
+                        .attr("fill", isSelected ? "#bfdbfe" : "#EBE9FC")
+                        .attr("stroke-width", isSelected ? "1.5" : "0.5");
+                        
+                    tooltip.style("opacity", 0);
+                })
+                .on("click", function(event, d) {
+                    const countryName = d.properties.name;
+                    let iso2 = null;
+                    let iso3 = null;
+                    const countryId = d.id || d.properties?.ISO_A3;
+                    if (countryId) {
+                        const result = lookup.byIso(String(countryId));
+                        if (result) {
+                            iso2 = result.iso2;
+                            iso3 = result.iso3;
+                        }
+                    }
+                    if (!iso2) {
+                        const result = lookup.byCountry(countryName);
+                        if (result) {
+                            iso2 = result.iso2;
+                            iso3 = result.iso3;
+                        }
+                    }
+                    if (onCountrySelectRef.current) {
+                        onCountrySelectRef.current({ name: countryName, code: iso2, iso3: iso3 });
+                    }
+                });
+
+            svg.selectAll(".country")
+                .classed("is-selected", d => {
+                    return selectedCountriesRef.current.some(c => c.name === d.properties.name);
+                })
+                .attr("fill", function() {
+                    return d3.select(this).classed("is-selected") ? "#bfdbfe" : "#EBE9FC";
+                })
+                .attr("stroke", function() {
+                    return d3.select(this).classed("is-selected") ? "#2563eb" : "#010104";
+                })
+                .attr("stroke-width", function() {
+                    return d3.select(this).classed("is-selected") ? "1.5" : "0.5";
+                });
+
+            // Zoom and Drag (Panning) behavior
+            const zoom = d3.zoom()
+                .scaleExtent([1, 8])
+                .translateExtent([[0, 0], [width, height]])
+                .extent([[0, 0], [width, height]])
+                .on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                });
+
+            svg.call(zoom);
+        });
+
+    }, []); // Only run once on mount
 
     return (
         <section
             id="map"
             className="relative w-full h-full flex flex-col justify-center items-center bg-white overflow-hidden"
-            onMouseMove={handleMouseMove}
         >
             <div className="w-full max-w-7xl h-full flex items-center justify-center relative">
-                <ComposableMap projectionConfig={{ scale: 180, center: [0, 5] }} style={{ width: "100%", height: "100%" }}>
-                    <defs>
-                        <linearGradient id="selectedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#4f46e5" />
-                            <stop offset="100%" stopColor="#312e81" />
-                        </linearGradient>
-                    </defs>
-                    <Geographies geography={geoUrl}>
-                        {({ geographies }) =>
-                            geographies.map((geo) => {
-                                const countryName = geo.properties.name;
-                                if (countryName === "Antarctica") return null;
-                                const isSelected = selectedCountries.some(c => c.name === countryName);
-                                return (
-                                    <Geography
-                                        key={geo.rsmKey}
-                                        geography={geo}
-                                        onClick={() => {
-                                            if (onCountrySelect) {
-                                                const info = getCountryInfo(geo);
-                                                onCountrySelect({ name: countryName, code: info.iso2, iso3: info.iso3 });
-                                            }
-                                        }}
-                                        onMouseEnter={() => {
-                                            const info = getCountryInfo(geo);
-                                            setHoveredCountry({
-                                                name: countryName,
-                                                code: info.iso2
-                                            });
-                                        }}
-                                        onMouseLeave={() => setHoveredCountry(null)}
-                                        style={{
-                                            default: {
-                                                fill: isSelected ? "url(#selectedGradient)" : "#EBE9FC",
-                                                stroke: isSelected ? "#ffffff" : "#010104",
-                                                strokeWidth: isSelected ? 1 : 0.5,
-                                                outline: "none"
-                                            },
-                                            hover: {
-                                                fill: isSelected ? "url(#selectedGradient)" : "#dcd9fa",
-                                                stroke: isSelected ? "#ffffff" : "#010104",
-                                                strokeWidth: isSelected ? 1.5 : 0.5,
-                                                outline: "none",
-                                                cursor: "pointer",
-                                                transition: "all 250ms"
-                                            },
-                                            pressed: {
-                                                fill: isSelected ? "url(#selectedGradient)" : "#010104",
-                                                stroke: isSelected ? "#ffffff" : "#010104",
-                                                strokeWidth: isSelected ? 1 : 0.5,
-                                                outline: "none"
-                                            }
-                                        }}
-                                    />
-                                );
-                            })
-                        }
-                    </Geographies>
-                </ComposableMap>
+                <svg ref={svgRef}></svg>
             </div>
-
-            {/* Hover Tooltip */}
-            {hoveredCountry && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: mousePos.y + 15,
-                        left: mousePos.x + 15,
-                        zIndex: 50
-                    }}
-                    className="bg-[#010104] text-[#EBE9FC] px-3 py-2 rounded-md shadow-xl flex items-center gap-3 font-semibold text-sm animate-fade-in pointer-events-none border border-[#3B3B3B]"
-                >
-                    {hoveredCountry.code && (
-                        <img
-                            src={`https://flagcdn.com/w40/${hoveredCountry.code.toLowerCase()}.png`}
-                            alt={`${hoveredCountry.name} flag`}
-                            className="w-6 h-auto rounded-[2px]"
-                        />
-                    )}
-                    <span>{hoveredCountry.name}</span>
-                </div>
-            )}
-
-            <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                .animate-fade-in {
-                    animation: fadeIn 0.2s ease-out forwards;
-                }
-            `}</style>
+            <div 
+                ref={tooltipRef} 
+                className="fixed bg-[#010104] text-[#EBE9FC] px-3 py-2 rounded-md shadow-xl font-semibold text-sm pointer-events-none border border-[#3B3B3B]"
+                style={{ opacity: 0, zIndex: 50, transition: 'opacity 0.2s ease-out' }}
+            ></div>
         </section>
     );
 }
-
-export default Map;

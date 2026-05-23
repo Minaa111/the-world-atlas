@@ -827,6 +827,7 @@ export default function Analysis() {
                                 <div className="absolute inset-0">
                                     <Globe 
                                         onCountrySelect={handleAddCountry} 
+                                        selectedCountries={selectedCountries}
                                     />
                                 </div>
                             ) : modalTab === "map" ? (

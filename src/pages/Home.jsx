@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Hero from "../Hero";
 import Map from "../Map";
 import Globe from "../components/Globe";
@@ -8,6 +8,18 @@ import { useNavigate } from "react-router-dom";
 export default function Home() {
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState('globe');
+    const [selectedCountries, setSelectedCountries] = useState([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('analysisSelectedCountries');
+        if (saved) {
+            try {
+                setSelectedCountries(JSON.parse(saved));
+            } catch (e) {
+                // ignore
+            }
+        }
+    }, []);
 
     const handleCountrySelect = (countryObj) => {
         navigate('/analysis', { state: { initialCountry: countryObj } });
@@ -40,11 +52,11 @@ export default function Home() {
                 </div>
 
                 <div className="w-full h-[600px] flex justify-center items-center px-6">
-                    {viewMode === 'globe' && <Globe onCountrySelect={handleCountrySelect} />}
-                    {viewMode === 'map' && <Map onCountrySelect={handleCountrySelect} />}
+                    {viewMode === 'globe' && <Globe onCountrySelect={handleCountrySelect} selectedCountries={selectedCountries} />}
+                    {viewMode === 'map' && <Map onCountrySelect={handleCountrySelect} selectedCountries={selectedCountries} />}
                     {viewMode === 'list' && (
-                        <div className="w-full max-w-7xl h-full bg-white rounded-3xl shadow-sm border border-[#EBE9FC] overflow-hidden">
-                            <CountriesList onSelect={handleCountrySelect} />
+                        <div className="w-full h-full border border-[#EBE9FC] rounded-2xl overflow-hidden shadow-sm">
+                            <CountriesList onSelect={handleCountrySelect} selectedCountries={selectedCountries} />
                         </div>
                     )}
                 </div>
