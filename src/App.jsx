@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import Home from "./pages/Home";
-import Countries from "./pages/Countries";
 import Analysis from "./pages/Analysis";
 import About from "./pages/About";
 
@@ -17,7 +16,6 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Navigate to="/" replace />} />
-          <Route path="/countries" element={<Countries />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/about" element={<About />} />
         </Routes>

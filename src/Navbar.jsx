@@ -4,7 +4,7 @@ function Navbar() {
 
   const navLinks = [
     { name: "Home", path: "/" },
-    { name: "Countries", path: "/countries" },
+    { name: "Analysis Workspace", path: "/analysis" },
     { name: "About The Project", path: "/about" },
   ];
 

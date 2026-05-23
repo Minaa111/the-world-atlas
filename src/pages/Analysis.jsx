@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, Plus, Map as MapIcon, List, LineChart, Hexagon, Sparkles, Download } from "lucide-react";
+import { X, Plus, Map as MapIcon, List, LineChart, Hexagon, Sparkles, Download, Globe as GlobeIcon } from "lucide-react";
 import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
@@ -19,6 +19,7 @@ import {
 import { Line, Radar, Scatter } from 'react-chartjs-2';
 import Map from "../Map";
 import CountriesList from "../components/CountriesList";
+import Globe from "../components/Globe";
 
 ChartJS.register(
   CategoryScale,
@@ -50,10 +51,28 @@ const formatValue = (val) => {
 export default function Analysis() {
     const location = useLocation();
     const navigate = useNavigate();
-    const [selectedCountries, setSelectedCountries] = useState([]);
+    const [selectedCountries, setSelectedCountries] = useState(() => {
+        let initial = [];
+        const saved = localStorage.getItem('analysisSelectedCountries');
+        if (saved) {
+            try {
+                initial = JSON.parse(saved);
+            } catch (e) {
+                // ignore
+            }
+        }
+        if (location.state?.initialCountry) {
+            const country = location.state.initialCountry;
+            const exists = initial.find(c => c.name === country.name);
+            if (!exists) {
+                initial.push(country);
+            }
+        }
+        return initial;
+    });
     const [activeDimensions, setActiveDimensions] = useState(["GNI"]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [modalTab, setModalTab] = useState("map"); 
+    const [modalTab, setModalTab] = useState("globe"); 
     const [viewTab, setViewTab] = useState("time"); // 'time', 'radar', or 'scatter'
     const [scatterX, setScatterX] = useState("GNI per capita");
     const [scatterY, setScatterY] = useState("GNI");
@@ -67,14 +86,18 @@ export default function Analysis() {
     const countryColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
     useEffect(() => {
+        localStorage.setItem('analysisSelectedCountries', JSON.stringify(selectedCountries));
+    }, [selectedCountries]);
+
+    useEffect(() => {
         if (location.state?.initialCountry) {
-            const country = location.state.initialCountry;
-            setSelectedCountries([country]);
+            // Clear the location state so we don't re-add on re-renders
             window.history.replaceState({}, document.title);
         }
     }, [location]);
 
     useEffect(() => {
+        let ignore = false;
         const fetchChartData = async () => {
             if (selectedCountries.length === 0) {
                 setChartData({});
@@ -84,14 +107,23 @@ export default function Analysis() {
             const iso3Codes = selectedCountries.map(c => c.iso3).join(',');
             try {
                 const response = await axios.get(`/api/data/compare?countries=${iso3Codes}&forecast=${showForecast}`);
-                setChartData(response.data);
+                if (!ignore) {
+                    setChartData(response.data);
+                }
             } catch (error) {
-                console.error("Error fetching data:", error);
+                if (!ignore) {
+                    console.error("Error fetching data:", error);
+                }
             } finally {
-                setIsLoading(false);
+                if (!ignore) {
+                    setIsLoading(false);
+                }
             }
         };
         fetchChartData();
+        return () => {
+            ignore = true;
+        };
     }, [selectedCountries, showForecast]);
 
     const removeCountry = (name) => {
@@ -763,16 +795,22 @@ export default function Analysis() {
                         <div className="p-6 border-b border-[#EBE9FC] flex justify-between items-center bg-white">
                             <div className="flex gap-4 bg-[#EBE9FC]/30 p-1 rounded-xl">
                                 <button 
+                                    onClick={() => setModalTab("globe")}
+                                    className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all ${modalTab === "globe" ? "bg-white text-[#010104] shadow-sm" : "text-gray-500 hover:text-[#010104]"}`}
+                                >
+                                    <GlobeIcon size={18} /> 3D Globe
+                                </button>
+                                <button 
                                     onClick={() => setModalTab("map")}
                                     className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all ${modalTab === "map" ? "bg-white text-[#010104] shadow-sm" : "text-gray-500 hover:text-[#010104]"}`}
                                 >
-                                    <MapIcon size={18} /> Map
+                                    <MapIcon size={18} /> 2D Map
                                 </button>
                                 <button 
                                     onClick={() => setModalTab("list")}
                                     className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all ${modalTab === "list" ? "bg-white text-[#010104] shadow-sm" : "text-gray-500 hover:text-[#010104]"}`}
                                 >
-                                    <List size={18} /> List
+                                    <List size={18} /> List View
                                 </button>
                             </div>
                             <button 
@@ -785,7 +823,13 @@ export default function Analysis() {
                         
                         {/* Modal Content */}
                         <div className="flex-1 overflow-hidden relative bg-[#F9F8FF]">
-                            {modalTab === "map" ? (
+                            {modalTab === "globe" ? (
+                                <div className="absolute inset-0">
+                                    <Globe 
+                                        onCountrySelect={handleAddCountry} 
+                                    />
+                                </div>
+                            ) : modalTab === "map" ? (
                                 <div className="absolute inset-0">
                                     <Map 
                                         onCountrySelect={handleAddCountry} 

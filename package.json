@@ -15,6 +15,7 @@
     "chart.js": "^4.5.1",
     "country-code-lookup": "^0.1.5",
     "country-list": "^2.4.1",
+    "d3": "^7.9.0",
     "dom-to-image-more": "^3.7.2",
     "html2canvas": "^1.4.1",
     "html2canvas-pro": "^2.0.2",
@@ -26,7 +27,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.13.2",
     "react-simple-maps": "^3.0.0",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "topojson-client": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
