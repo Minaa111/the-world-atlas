@@ -51,7 +51,7 @@ export default function Home() {
                     </button>
                 </div>
 
-                <div className="w-full h-[600px] flex justify-center items-center px-6">
+                <div className="w-[90vw] max-w-[1600px] mx-auto h-[600px] flex justify-center items-center">
                     {viewMode === 'globe' && <Globe onCountrySelect={handleCountrySelect} selectedCountries={selectedCountries} />}
                     {viewMode === 'map' && <Map onCountrySelect={handleCountrySelect} selectedCountries={selectedCountries} />}
                     {viewMode === 'list' && (

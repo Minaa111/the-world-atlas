@@ -4,15 +4,16 @@ import { ArrowLeft, Globe as GlobeIcon, Map as MapIcon, Loader2 } from 'lucide-r
 import * as d3 from 'd3';
 import Globe from '../components/Globe';
 import Map from '../Map';
+import lookup from 'country-code-lookup';
 
 const DIMENSIONS = [
+    { id: 'gni', label: 'GNI', unit: 'B' },
+    { id: 'gni_per_capita', label: 'GNI per capita', unit: '' },
+    { id: 'gini', label: 'Income Inequality', unit: '' },
     { id: 'life_expectancy', label: 'Life Expectancy', unit: 'Years' },
-    { id: 'gini', label: 'Gini Index', unit: '' },
-    { id: 'gni', label: 'GNI (Billion $)', unit: 'B' },
-    { id: 'gni_per_capita', label: 'GNI Per Capita ($)', unit: '' },
-    { id: 'literacy_rate', label: 'Literacy Rate (%)', unit: '%' },
-    { id: 'homicide_rate', label: 'Homicide Rate', unit: '/100k' },
-    { id: 'pm25', label: 'PM2.5 Pollution', unit: 'µg/m³' }
+    { id: 'literacy_rate', label: 'Literacy Rate', unit: '%' },
+    { id: 'homicide_rate', label: 'Crime', unit: '/100k' },
+    { id: 'pm25', label: 'Air Pollution', unit: 'µg/m³' }
 ];
 
 export default function Choropleth() {
@@ -20,7 +21,7 @@ export default function Choropleth() {
     const [viewMode, setViewMode] = useState('globe');
     const [year, setYear] = useState(2015);
     const [yearInput, setYearInput] = useState('2015');
-    const [dimension, setDimension] = useState('life_expectancy');
+    const [dimension, setDimension] = useState('gni');
     const [globalData, setGlobalData] = useState({});
     const [loading, setLoading] = useState(false);
 
@@ -64,8 +65,19 @@ export default function Choropleth() {
     // Calculate choropleth mappings
     const activeDimObj = DIMENSIONS.find(d => d.id === dimension);
     
-    const validValues = Object.values(globalData)
-        .map(d => d[dimension])
+    const validValues = Object.keys(globalData)
+        .filter(key => {
+            try {
+                return lookup.byIso(key) || lookup.byCountry(key);
+            } catch (e) {
+                try {
+                    return lookup.byCountry(key);
+                } catch (err) {
+                    return false;
+                }
+            }
+        })
+        .map(key => globalData[key][dimension])
         .filter(v => v !== null && v !== undefined);
 
     const minVal = validValues.length ? Math.min(...validValues) : 0;
@@ -87,9 +99,9 @@ export default function Choropleth() {
     });
 
     return (
-        <div className="w-full h-screen bg-[#F9F8FF] flex flex-col relative overflow-hidden text-[#010104]">
-            {/* Header Overlay */}
-            <div className="absolute top-0 left-0 w-full z-10 p-6 flex items-center justify-between pointer-events-none">
+        <div className="w-full h-screen bg-white flex flex-col relative overflow-hidden text-[#010104]">
+            {/* Header */}
+            <div className="w-full z-10 p-6 flex items-center justify-between pointer-events-none">
                 <button 
                     onClick={() => navigate('/')}
                     className="flex items-center gap-2 bg-white text-[#010104] hover:bg-gray-50 px-5 py-3 rounded-full font-bold text-sm shadow-md transition-all pointer-events-auto border border-[#EBE9FC]"
@@ -118,7 +130,7 @@ export default function Choropleth() {
             </div>
 
             {/* Main Map Area */}
-            <div className="flex-1 w-full relative z-0">
+            <div className="flex-1 w-full relative z-0 min-h-0">
                 {viewMode === 'globe' ? (
                     <Globe 
                         choroplethData={choroplethMapData} 
@@ -132,8 +144,8 @@ export default function Choropleth() {
                 )}
             </div>
 
-            {/* Bottom Controls Overlay */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-10 pointer-events-none flex flex-col gap-4">
+            {/* Bottom Controls */}
+            <div className="w-[90%] max-w-6xl mx-auto mb-6 z-10 pointer-events-none flex flex-col gap-4">
                 
                 {/* Dimensions Bar */}
                 <div className="flex justify-center flex-wrap gap-2 pointer-events-auto">
@@ -188,7 +200,7 @@ export default function Choropleth() {
                     <div className="w-[1px] h-12 bg-[#EBE9FC]"></div>
 
                     {/* Legend */}
-                    <div className="w-48 flex flex-col gap-2">
+                    <div className="w-96 flex flex-col gap-2">
                         <div className="flex justify-between text-xs font-bold text-gray-500">
                             <span>Low</span>
                             {loading && <Loader2 size={14} className="animate-spin text-[#2563eb]" />}
@@ -198,8 +210,8 @@ export default function Choropleth() {
                             background: `linear-gradient(to right, ${d3.interpolateBlues(0)}, ${d3.interpolateBlues(1)})`
                         }}></div>
                         <div className="flex justify-between text-xs font-bold">
-                            <span>{minVal.toLocaleString()} {activeDimObj.unit}</span>
-                            <span>{maxVal.toLocaleString()} {activeDimObj.unit}</span>
+                            <span>{Number(minVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeDimObj.unit}</span>
+                            <span>{Number(maxVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeDimObj.unit}</span>
                         </div>
                     </div>
                 </div>
