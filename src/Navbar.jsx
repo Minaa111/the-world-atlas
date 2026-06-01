@@ -5,6 +5,7 @@ function Navbar() {
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Analysis Workspace", path: "/analysis" },
+    { name: "Choropleth", path: "/choropleth" },
     { name: "About The Project", path: "/about" },
   ];
 

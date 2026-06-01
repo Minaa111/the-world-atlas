@@ -3,17 +3,21 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import lookup from 'country-code-lookup';
 
-export default function Globe({ selectedCountries = [], onCountrySelect }) {
+export default function Globe({ selectedCountries = [], onCountrySelect, choroplethData, choroplethDimension }) {
     const svgRef = useRef();
     const tooltipRef = useRef();
     const isRendered = useRef(false);
 
     const selectedCountriesRef = useRef(selectedCountries);
     const onCountrySelectRef = useRef(onCountrySelect);
+    const choroplethDataRef = useRef(choroplethData);
+    const choroplethDimensionRef = useRef(choroplethDimension);
 
     useEffect(() => {
         selectedCountriesRef.current = selectedCountries;
         onCountrySelectRef.current = onCountrySelect;
+        choroplethDataRef.current = choroplethData;
+        choroplethDimensionRef.current = choroplethDimension;
         
         if (svgRef.current) {
             const svg = d3.select(svgRef.current);
@@ -21,7 +25,24 @@ export default function Globe({ selectedCountries = [], onCountrySelect }) {
                 .classed("is-selected", d => {
                     return selectedCountries.some(c => c.name === d.properties.name);
                 })
-                .attr("fill", function() {
+                .attr("fill", function(d) {
+                    if (choroplethData) {
+                        const countryName = d.properties.name;
+                        let iso3 = null;
+                        const countryId = d.id || d.properties?.ISO_A3;
+                        if (countryId) {
+                            const result = lookup.byIso(String(countryId));
+                            if (result) iso3 = result.iso3;
+                        }
+                        if (!iso3) {
+                            const result = lookup.byCountry(countryName);
+                            if (result) iso3 = result.iso3;
+                        }
+                        if (iso3 && choroplethData[iso3]) {
+                            return choroplethData[iso3].color;
+                        }
+                        return "#EBE9FC";
+                    }
                     return d3.select(this).classed("is-selected") ? "#bfdbfe" : "#EBE9FC";
                 })
                 .attr("stroke", function() {
@@ -31,7 +52,7 @@ export default function Globe({ selectedCountries = [], onCountrySelect }) {
                     return d3.select(this).classed("is-selected") ? "1.5" : "0.5";
                 });
         }
-    }, [selectedCountries, onCountrySelect]);
+    }, [selectedCountries, onCountrySelect, choroplethData]);
 
     useEffect(() => {
         if (isRendered.current) return;
@@ -97,13 +118,17 @@ export default function Globe({ selectedCountries = [], onCountrySelect }) {
                 .attr("stroke-width", "0.5")
                 .style("cursor", "pointer")
                 .on("mouseover", function(event, d) {
-                    const isSelected = d3.select(this).classed("is-selected");
-
-                    d3.select(this)
-                        .attr("fill", isSelected ? "#93c5fd" : "#dcd9fa")
-                        .attr("stroke-width", isSelected ? "2" : "1.5");
-                    
                     const countryName = d.properties.name;
+                    
+                    if (choroplethDataRef.current) {
+                        d3.select(this).attr("stroke-width", "1.5");
+                    } else {
+                        const isSelected = d3.select(this).classed("is-selected");
+                        d3.select(this)
+                            .attr("fill", isSelected ? "#93c5fd" : "#dcd9fa")
+                            .attr("stroke-width", isSelected ? "2" : "1.5");
+                    }
+                    
                     let iso2 = null;
                     const countryId = d.id || d.properties?.ISO_A3;
                     if (countryId) {
@@ -115,11 +140,30 @@ export default function Globe({ selectedCountries = [], onCountrySelect }) {
                         if (result) iso2 = result.iso2;
                     }
 
+                    let valueHtml = '';
+                    let iso3 = null;
+                    if (countryId) {
+                        const result = lookup.byIso(String(countryId));
+                        if (result) iso3 = result.iso3;
+                    }
+                    if (!iso3) {
+                        const result = lookup.byCountry(countryName);
+                        if (result) iso3 = result.iso3;
+                    }
+
+                    if (choroplethDataRef.current && iso3 && choroplethDataRef.current[iso3]) {
+                        const cData = choroplethDataRef.current[iso3];
+                        valueHtml = `<div style="font-weight: normal; margin-top: 4px; color: #a1a1aa;">${choroplethDimensionRef.current}: <span style="color: #fff; font-weight: bold;">${cData.value} ${cData.unit}</span></div>`;
+                    }
+
                     tooltip.style("opacity", 1)
                         .html(`
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                ${iso2 ? `<img src="https://flagcdn.com/w40/${iso2.toLowerCase()}.png" width="24" style="border-radius:2px" />` : ''}
-                                <span>${countryName}</span>
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    ${iso2 ? `<img src="https://flagcdn.com/w40/${iso2.toLowerCase()}.png" width="24" style="border-radius:2px" />` : ''}
+                                    <span>${countryName}</span>
+                                </div>
+                                ${valueHtml}
                             </div>
                         `)
                         .style("left", (event.clientX + 15) + "px")
@@ -131,11 +175,16 @@ export default function Globe({ selectedCountries = [], onCountrySelect }) {
                         .style("top", (event.clientY + 15) + "px");
                 })
                 .on("mouseout", function(event, d) {
-                    const isSelected = d3.select(this).classed("is-selected");
-
-                    d3.select(this)
-                        .attr("fill", isSelected ? "#bfdbfe" : "#EBE9FC")
-                        .attr("stroke-width", isSelected ? "1.5" : "0.5");
+                    const countryName = d.properties.name;
+                    
+                    if (choroplethDataRef.current) {
+                        d3.select(this).attr("stroke-width", "0.5");
+                    } else {
+                        const isSelected = d3.select(this).classed("is-selected");
+                        d3.select(this)
+                            .attr("fill", isSelected ? "#bfdbfe" : "#EBE9FC")
+                            .attr("stroke-width", isSelected ? "1.5" : "0.5");
+                    }
                     tooltip.style("opacity", 0);
                 })
                 .on("click", function(event, d) {
@@ -167,7 +216,24 @@ export default function Globe({ selectedCountries = [], onCountrySelect }) {
                 .classed("is-selected", d => {
                     return selectedCountriesRef.current.some(c => c.name === d.properties.name);
                 })
-                .attr("fill", function() {
+                .attr("fill", function(d) {
+                    if (choroplethDataRef.current) {
+                        const countryName = d.properties.name;
+                        let iso3 = null;
+                        const countryId = d.id || d.properties?.ISO_A3;
+                        if (countryId) {
+                            const result = lookup.byIso(String(countryId));
+                            if (result) iso3 = result.iso3;
+                        }
+                        if (!iso3) {
+                            const result = lookup.byCountry(countryName);
+                            if (result) iso3 = result.iso3;
+                        }
+                        if (iso3 && choroplethDataRef.current[iso3]) {
+                            return choroplethDataRef.current[iso3].color;
+                        }
+                        return "#EBE9FC";
+                    }
                     return d3.select(this).classed("is-selected") ? "#bfdbfe" : "#EBE9FC";
                 })
                 .attr("stroke", function() {

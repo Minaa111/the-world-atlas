@@ -115,6 +115,21 @@ def compare_data():
                 
     return jsonify(result)
 
+@app.route('/api/data/global', methods=['GET'])
+@cache.cached(timeout=86400, query_string=True)
+def global_data():
+    year = request.args.get('year', type=int)
+    if not year:
+        return jsonify({"error": "Year parameter is required"}), 400
+    
+    query = AnnualIndicator.query.filter_by(year=year).all()
+    
+    result = {}
+    for record in query:
+        result[record.country] = record.to_dict()
+        
+    return jsonify(result)
+
 @app.route('/api/data/latest', methods=['GET'])
 @cache.cached(timeout=86400)
 def latest_data():
