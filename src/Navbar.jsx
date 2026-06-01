@@ -11,7 +11,7 @@ function Navbar() {
 
   return (
     <nav className="fixed top-0 left-1/2 z-50 w-full -translate-x-1/2 p-4">
-      <div className="mx-auto flex h-20 max-w-[626px] items-center justify-between rounded-[20px] bg-text/70 px-6 shadow-lg backdrop-blur-md">
+      <div className="mx-auto flex h-20 max-w-4xl items-center justify-between rounded-[20px] bg-text/70 px-6 shadow-lg backdrop-blur-md">
         
         <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
           <svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

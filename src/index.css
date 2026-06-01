@@ -8,3 +8,7 @@
     --color-accent: #0600C2;
     
 }
+
+html {
+    overflow-y: scroll;
+}

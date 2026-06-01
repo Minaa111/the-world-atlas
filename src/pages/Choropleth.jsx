@@ -7,23 +7,33 @@ import Map from '../Map';
 import lookup from 'country-code-lookup';
 
 const DIMENSIONS = [
-    { id: 'gni', label: 'GNI', unit: 'B' },
+    { id: 'gni', label: 'Gross National Income (GNI)', unit: 'B' },
     { id: 'gni_per_capita', label: 'GNI per capita', unit: '' },
-    { id: 'gini', label: 'Income Inequality', unit: '' },
+    { id: 'gini', label: 'Gini Index', unit: '' },
     { id: 'life_expectancy', label: 'Life Expectancy', unit: 'Years' },
     { id: 'literacy_rate', label: 'Literacy Rate', unit: '%' },
-    { id: 'homicide_rate', label: 'Crime', unit: '/100k' },
-    { id: 'pm25', label: 'Air Pollution', unit: 'µg/m³' }
+    { id: 'homicide_rate', label: 'Intentional Homicide Rate', unit: '/100k' },
+    { id: 'pm25', label: 'PM2.5 Air Pollution', unit: 'µg/m³' }
 ];
 
 export default function Choropleth() {
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState('globe');
-    const [year, setYear] = useState(2015);
-    const [yearInput, setYearInput] = useState('2015');
+    const [year, setYear] = useState(() => {
+        const saved = localStorage.getItem('choroplethYear');
+        return saved ? parseInt(saved, 10) : 2015;
+    });
+    const [yearInput, setYearInput] = useState(() => {
+        const saved = localStorage.getItem('choroplethYear');
+        return saved ? saved : '2015';
+    });
     const [dimension, setDimension] = useState('gni');
     const [globalData, setGlobalData] = useState({});
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('choroplethYear', year.toString());
+    }, [year]);
 
     useEffect(() => {
         setLoading(true);
