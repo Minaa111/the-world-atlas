@@ -105,7 +105,7 @@ export default function Globe({ selectedCountries = [], onCountrySelect, choropl
 
         const tooltip = d3.select(tooltipRef.current);
 
-        d3.json("https://unpkg.com/world-atlas@2.0.2/countries-50m.json").then((world) => {
+        d3.json("https://unpkg.com/world-atlas@2.0.2/countries-110m.json").then((world) => {
             const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.properties.name !== "Antarctica");
 
             const countryPaths = g.selectAll(".country")
