@@ -23,6 +23,13 @@ import Map from "../components/Map";
 import CountriesList from "../components/CountriesList";
 import Globe from "../components/Globe";
 
+import TimeSeriesView from "../../shared/components/analysis/TimeSeriesView";
+import RadarView from "../../shared/components/analysis/RadarView";
+import BarView from "../../shared/components/analysis/BarView";
+import PolarView from "../../shared/components/analysis/PolarView";
+import CorrelationView from "../../shared/components/analysis/CorrelationView";
+import DataTableView from "../../shared/components/analysis/DataTableView";
+
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -50,6 +57,16 @@ const dimensionsMap = {
 const formatValue = (val) => {
     if (val === null || val === undefined) return val;
     return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const globalMaxValues = {
+    "gini": 100,
+    "life_expectancy": 90,
+    "homicide_rate": 100,
+    "literacy_rate": 100,
+    "pm25": 100,
+    "gni": 30000000000000, // 30 Trillion
+    "gni_per_capita": 150000
 };
 
 export default function Analysis() {
@@ -267,659 +284,6 @@ export default function Analysis() {
         }
     };
 
-    const renderTimeCharts = () => {
-        return (
-            <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-                {/* Dimensions Row (Moved to Time Series View) */}
-                <div className="sticky top-[80px] z-30 bg-[#F9F8FF] flex flex-col items-start gap-3 py-4 -mt-8 -mx-8 px-8 border-b border-[#EBE9FC]">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Indicators</span>
-                    <div className="flex flex-wrap items-center gap-3 w-full">
-                        {dimensions.map(dim => {
-                            const isActive = activeDimension === dim;
-                            return (
-                                <button
-                                    key={dim}
-                                    onClick={() => toggleDimension(dim)}
-                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 border ${isActive
-                                            ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] shadow-md'
-                                            : 'bg-white text-[#010104] hover:bg-gray-50 border-[#EBE9FC]'
-                                        }`}
-                                >
-                                    {dim}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {[activeDimension].map(dimName => {
-                    const dimInfo = dimensionsMap[dimName];
-                    const metric = dimInfo.key;
-
-                    const allYears = new Set();
-                    selectedCountries.forEach(country => {
-                        const cData = chartData[country.iso3] || [];
-                        cData.forEach(d => {
-                            if (d[metric] !== null && d[metric] !== undefined) {
-                                allYears.add(d.year);
-                            }
-                        });
-                    });
-
-                    const sortedYears = Array.from(allYears).sort((a, b) => a - b);
-
-                    if (sortedYears.length === 0) {
-                        return (
-                            <div key={dimName} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col" style={{ height: '400px' }}>
-                                <h3 className="text-xl font-bold mb-4 text-[#010104]">{dimInfo.label}</h3>
-                                <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-300 mb-3" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M3 3V21H21" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M7 14L11 10L15 14L21 8" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                    <p className="text-gray-400 font-medium">No data available for the selected countries.</p>
-                                </div>
-                            </div>
-                        );
-                    }
-
-                    const datasets = selectedCountries.flatMap((country, idx) => {
-                        const cData = chartData[country.iso3] || [];
-                        const color = countryColors[idx % countryColors.length];
-
-                        // Historical Data
-                        const histRecords = cData.filter(d => !d.is_forecast && d[metric] !== null && d[metric] !== undefined);
-                        const lastHist = histRecords.length > 0 ? histRecords[histRecords.length - 1] : null;
-
-                        const histPoints = sortedYears.map(y => {
-                            const rec = cData.find(d => d.year === y && !d.is_forecast);
-                            return rec && rec[metric] !== null ? rec[metric] : null;
-                        });
-
-                        const hasData = histPoints.some(val => val !== null);
-
-                        const datasetList = [{
-                            label: country.name + (hasData ? "" : " (No Data)"),
-                            data: histPoints,
-                            borderColor: color,
-                            backgroundColor: color,
-                            tension: 0.3,
-                            pointRadius: 3,
-                            spanGaps: true
-                        }];
-
-                        // Forecast Data
-                        if (showForecast) {
-                            const forecastPoints = sortedYears.map(y => {
-                                if (lastHist && y === lastHist.year) {
-                                    return lastHist[metric]; // Connect point
-                                }
-                                const rec = cData.find(d => d.year === y && d.is_forecast);
-                                return rec && rec[metric] !== null ? rec[metric] : null;
-                            });
-
-                            const hasForecast = forecastPoints.some(val => val !== null) && forecastPoints.filter(val => val !== null).length > 1;
-
-                            if (hasForecast) {
-                                datasetList.push({
-                                    label: `${country.name} (Forecast)`,
-                                    data: forecastPoints,
-                                    borderColor: color,
-                                    backgroundColor: color,
-                                    tension: 0.3,
-                                    pointRadius: 0, // hide points on forecast line for cleaner look
-                                    borderDash: [5, 5], // Dashed line
-                                    spanGaps: true
-                                });
-                            }
-                        }
-
-                        return datasetList;
-                    });
-
-                    const data = {
-                        labels: sortedYears,
-                        datasets: datasets
-                    };
-
-                    const options = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    filter: function (item, chart) {
-                                        // Hide forecast labels from legend to keep it clean
-                                        return !item.text.includes('(Forecast)');
-                                    }
-                                },
-                                onClick: function (e, legendItem, legend) {
-                                    const index = legendItem.datasetIndex;
-                                    const chart = legend.chart;
-
-                                    // Toggle the main dataset
-                                    const meta = chart.getDatasetMeta(index);
-                                    const isHidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
-                                    meta.hidden = isHidden;
-
-                                    // Find and toggle the corresponding forecast dataset
-                                    const mainLabel = chart.data.datasets[index].label.replace(' (No Data)', '');
-                                    const forecastLabel = `${mainLabel} (Forecast)`;
-
-                                    chart.data.datasets.forEach((dataset, i) => {
-                                        if (dataset.label === forecastLabel) {
-                                            const forecastMeta = chart.getDatasetMeta(i);
-                                            forecastMeta.hidden = isHidden;
-                                        }
-                                    });
-
-                                    chart.update();
-                                }
-                            },
-                            title: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed.y !== null) {
-                                            label += formatValue(context.parsed.y);
-                                        }
-                                        return label;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: metric === 'homicide_rate' || metric === 'pm25'
-                            }
-                        }
-                    };
-
-                    return (
-                        <div key={dimName} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col" style={{ height: '400px' }}>
-                            <h3 className="text-xl font-bold mb-4 text-[#010104]">{dimInfo.label}</h3>
-                            <div className="flex-1 relative w-full h-full">
-                                <Line data={data} options={options} />
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
-    const renderRadarCharts = () => {
-        // Use global predefined maximums for consistent radar shapes
-        const globalMaxValues = {
-            "gini": 100,
-            "life_expectancy": 90,
-            "homicide_rate": 100,
-            "literacy_rate": 100,
-            "pm25": 100,
-            "gni": 30000000000000, // 30 Trillion
-            "gni_per_capita": 150000
-        };
-
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 z-10 relative bg-[#F9F8FF] w-full">
-                {selectedCountries.map((country, idx) => {
-                    const latest = getLatestValues(country.iso3);
-                    const color = countryColors[idx % countryColors.length];
-
-                    const dataPoints = dimensions.map(dim => {
-                        const raw = latest[dimensionsMap[dim].key];
-                        if (raw === undefined || raw === null) return null;
-                        return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
-                    });
-
-                    const data = {
-                        labels: dimensions,
-                        datasets: [
-                            {
-                                label: country.name,
-                                data: dataPoints,
-                                backgroundColor: color + '40',
-                                borderColor: color,
-                                pointBackgroundColor: color,
-                                pointBorderColor: '#fff',
-                                borderWidth: 2,
-                                spanGaps: true,
-                            }
-                        ]
-                    };
-
-                    const options = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: { padding: 20 },
-                        scales: {
-                            r: {
-                                min: 0,
-                                max: 100,
-                                angleLines: { color: 'rgba(0,0,0,0.1)' },
-                                grid: { color: 'rgba(0,0,0,0.05)' },
-                                pointLabels: {
-                                    padding: 24,
-                                    font: { size: 12, weight: 'bold' },
-                                    color: function(context) {
-                                        const dimName = dimensions[context.index];
-                                        const raw = latest[dimensionsMap[dimName].key];
-                                        return (raw === undefined || raw === null) ? '#9ca3af' : '#010104';
-                                    },
-                                    callback: function (value, index) {
-                                        const dimName = dimensions[index];
-                                        const max = globalMaxValues[dimensionsMap[dimName].key];
-                                        let maxStr = formatValue(max);
-                                        if (maxStr.endsWith('.00')) maxStr = maxStr.slice(0, -3);
-                                        return [value, `(Max: ${maxStr})`];
-                                    }
-                                },
-                                ticks: { display: false, stepSize: 20 }
-                            }
-                        },
-                        interaction: {
-                            mode: 'dataset',
-                            intersect: false,
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        const dimName = dimensions[context.dataIndex];
-                                        const rawVal = latest[dimensionsMap[dimName].key];
-                                        return (rawVal !== null && rawVal !== undefined) ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data Available`;
-                                    }
-                                }
-                            }
-                        }
-                    };
-
-                    const centerPointLabelsPlugin = {
-                        id: 'centerPointLabels',
-                        afterLayout: (chart) => {
-                            if (chart.scales.r && chart.scales.r._pointLabelItems) {
-                                chart.scales.r._pointLabelItems.forEach(item => {
-                                    item.textAlign = 'center';
-                                });
-                            }
-                        }
-                    };
-
-                    return (
-                        <div key={country.iso3} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col items-center" style={{ height: '600px' }}>
-                            <div className="flex items-center gap-3 mb-6 w-full pb-4 border-b border-[#EBE9FC]">
-                                {country.code && (
-                                    <img
-                                        src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
-                                        alt="flag"
-                                        className="w-8 h-auto rounded shadow-sm border border-gray-100"
-                                    />
-                                )}
-                                <h3 className="text-xl font-bold text-[#010104]">{country.name}</h3>
-                            </div>
-                            <div className="flex-1 relative w-full h-full px-4">
-                                <Radar data={data} options={options} plugins={[centerPointLabelsPlugin]} />
-                            </div>
-                            <div className="w-full text-center mt-4 text-xs text-gray-400 font-medium bg-gray-50 py-2 rounded-lg flex flex-col gap-1">
-                                <span>* Using latest available historical data point per dimension</span>
-                                <span>* Values are normalized relative to global theoretical maximums</span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
-    const renderBarCharts = () => {
-        return (
-            <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-                <div className="sticky top-[80px] z-30 bg-[#F9F8FF] flex flex-col items-start gap-3 py-4 -mt-8 -mx-8 px-8 border-b border-[#EBE9FC]">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Indicators</span>
-                    <div className="flex flex-wrap items-center gap-3 w-full">
-                        {dimensions.map(dim => {
-                            const isActive = activeDimension === dim;
-                            return (
-                                <button
-                                    key={dim}
-                                    onClick={() => toggleDimension(dim)}
-                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 border ${isActive
-                                            ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] shadow-md'
-                                            : 'bg-white text-[#010104] hover:bg-gray-50 border-[#EBE9FC]'
-                                        }`}
-                                >
-                                    {dim}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {[activeDimension].map(dimName => {
-                    const dimInfo = dimensionsMap[dimName];
-                    const metric = dimInfo.key;
-
-                    const labels = [];
-                    const dataPoints = [];
-                    const backgroundColors = [];
-                    const borderColors = [];
-
-                    selectedCountries.forEach((country, idx) => {
-                        const latest = getLatestValues(country.iso3);
-                        labels.push(country.name);
-                        dataPoints.push(latest[metric]);
-                        const color = countryColors[idx % countryColors.length];
-                        backgroundColors.push(color + '80'); // 50% opacity
-                        borderColors.push(color);
-                    });
-
-                    const data = {
-                        labels,
-                        datasets: [
-                            {
-                                label: dimInfo.label,
-                                data: dataPoints,
-                                backgroundColor: backgroundColors,
-                                borderColor: borderColors,
-                                borderWidth: 2,
-                                borderRadius: 4,
-                            }
-                        ]
-                    };
-
-                    const options = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        if (context.parsed.y !== null && context.parsed.y !== undefined) {
-                                            return `${dimInfo.label}: ${formatValue(context.parsed.y)}`;
-                                        }
-                                        return `${dimInfo.label}: No Data`;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    };
-
-                    return (
-                        <div key={dimName} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col" style={{ height: '400px' }}>
-                            <h3 className="text-xl font-bold mb-4 text-[#010104]">{dimInfo.label}</h3>
-                            <div className="flex-1 relative w-full h-full">
-                                <Bar data={data} options={options} />
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
-    const renderPolarAreaCharts = () => {
-        const globalMaxValues = {
-            "gini": 100,
-            "life_expectancy": 90,
-            "homicide_rate": 100,
-            "literacy_rate": 100,
-            "pm25": 100,
-            "gni": 30000000000000, // 30 Trillion
-            "gni_per_capita": 150000
-        };
-
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 z-10 relative bg-[#F9F8FF] w-full">
-                {selectedCountries.map((country, idx) => {
-                    const latest = getLatestValues(country.iso3);
-
-                    const isMissing = dimensions.map(dim => {
-                        const raw = latest[dimensionsMap[dim].key];
-                        return raw === undefined || raw === null;
-                    });
-
-                    const dataPoints = dimensions.map((dim, i) => {
-                        if (isMissing[i]) return 100;
-                        const raw = latest[dimensionsMap[dim].key];
-                        return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
-                    });
-
-                    const bgColors = dimensions.map((_, i) => isMissing[i] ? 'rgba(229, 231, 235, 0.4)' : countryColors[i % countryColors.length] + '80');
-                    const bdColors = dimensions.map((_, i) => isMissing[i] ? '#9ca3af' : countryColors[i % countryColors.length]);
-
-                    const data = {
-                        labels: dimensions,
-                        datasets: [
-                            {
-                                label: country.name,
-                                data: dataPoints,
-                                backgroundColor: bgColors,
-                                borderColor: bdColors,
-                                borderWidth: 1,
-                                borderDash: (ctx) => isMissing[ctx.dataIndex] ? [5, 5] : []
-                            }
-                        ]
-                    };
-
-                    const options = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: { padding: 20 },
-                        scales: {
-                            r: {
-                                min: 0,
-                                max: 100,
-                                ticks: { display: false, stepSize: 20 },
-                                grid: { color: 'rgba(0,0,0,0.05)' },
-                                angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: {
-                                    font: { size: 11, weight: 'bold' }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        const dimName = dimensions[context.dataIndex];
-                                        const rawVal = latest[dimensionsMap[dimName].key];
-                                        return (rawVal !== null && rawVal !== undefined) ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data Available`;
-                                    }
-                                }
-                            }
-                        }
-                    };
-
-                    return (
-                        <div key={country.iso3} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col items-center" style={{ height: '600px' }}>
-                            <div className="flex items-center gap-3 mb-6 w-full pb-4 border-b border-[#EBE9FC]">
-                                {country.code && (
-                                    <img
-                                        src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
-                                        alt="flag"
-                                        className="w-8 h-auto rounded shadow-sm border border-gray-100"
-                                    />
-                                )}
-                                <h3 className="text-xl font-bold text-[#010104]">{country.name}</h3>
-                            </div>
-                            <div className="flex-1 relative w-full h-full px-4">
-                                <PolarArea data={data} options={options} />
-                            </div>
-                            <div className="w-full text-center mt-4 text-xs text-gray-400 font-medium bg-gray-50 py-2 rounded-lg flex flex-col gap-1">
-                                <span>* Using latest available historical data point per dimension</span>
-                                <span>* Values are normalized relative to global theoretical maximums</span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
-    const renderDataTable = () => {
-        return (
-            <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-                <div className="bg-white rounded-3xl shadow-sm border border-[#EBE9FC] w-full overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50 border-b border-[#EBE9FC]">
-                                    <th className="p-4 font-bold text-[#010104] whitespace-nowrap sticky left-0 bg-gray-50 z-10 border-r border-[#EBE9FC]">Country</th>
-                                    {dimensions.map(dim => (
-                                        <th key={dim} className="p-4 font-bold text-gray-600 whitespace-nowrap min-w-[150px]">{dim}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selectedCountries.map(country => {
-                                    const latest = getLatestValues(country.iso3);
-                                    return (
-                                        <tr key={country.iso3} className="border-b border-gray-100 hover:bg-[#F9F8FF] transition-colors">
-                                            <td className="p-4 font-bold text-[#010104] flex items-center gap-3 sticky left-0 bg-white z-10 border-r border-[#EBE9FC]">
-                                                {country.code && (
-                                                    <img
-                                                        src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                                                        alt="flag"
-                                                        className="w-5 h-auto rounded-sm shadow-sm"
-                                                    />
-                                                )}
-                                                {country.name}
-                                            </td>
-                                            {dimensions.map(dim => {
-                                                const val = latest[dimensionsMap[dim].key];
-                                                return (
-                                                    <td key={dim} className="p-4 font-medium text-gray-600">
-                                                        {val !== null && val !== undefined ? formatValue(val) : <span className="text-gray-400">N/A</span>}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    );
-                                })}
-                                {selectedCountries.length === 0 && (
-                                    <tr>
-                                        <td colSpan={dimensions.length + 1} className="p-8 text-center text-gray-500">
-                                            No countries selected.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const renderScatterChart = () => {
-        const xDim = dimensionsMap[scatterX];
-        const yDim = dimensionsMap[scatterY];
-
-        const datasets = selectedCountries.map((country, idx) => {
-            const cData = chartData[country.iso3] || [];
-            const color = countryColors[idx % countryColors.length];
-
-            const points = [];
-            cData.forEach(d => {
-                if (!d.is_forecast && d[xDim.key] !== null && d[xDim.key] !== undefined && d[yDim.key] !== null && d[yDim.key] !== undefined) {
-                    points.push({
-                        x: d[xDim.key],
-                        y: d[yDim.key],
-                        year: d.year
-                    });
-                }
-            });
-
-            return {
-                label: country.name,
-                data: points,
-                backgroundColor: color,
-                pointRadius: 6,
-                pointHoverRadius: 8
-            };
-        });
-
-        const data = { datasets };
-
-        const options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: { display: true, text: xDim.label, font: { weight: 'bold', size: 14 } }
-                },
-                y: {
-                    title: { display: true, text: yDim.label, font: { weight: 'bold', size: 14 } }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const pt = context.raw;
-                            return `${context.dataset.label} (${pt.year}): ${scatterX}=${formatValue(pt.x)}, ${scatterY}=${formatValue(pt.y)}`;
-                        }
-                    }
-                }
-            }
-        };
-
-        return (
-            <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col" style={{ height: 'calc(100vh - 400px)', minHeight: '300px' }}>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <h3 className="text-xl font-bold text-[#010104]">Correlation Analysis</h3>
-                        <div className="flex flex-wrap gap-4 items-center">
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm font-bold text-gray-500">Y-Axis:</label>
-                                <select
-                                    value={scatterY}
-                                    onChange={e => setScatterY(e.target.value)}
-                                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold bg-gray-50 focus:outline-none focus:border-indigo-500"
-                                >
-                                    {dimensions.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm font-bold text-gray-500">X-Axis:</label>
-                                <select
-                                    value={scatterX}
-                                    onChange={e => setScatterX(e.target.value)}
-                                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold bg-gray-50 focus:outline-none focus:border-indigo-500"
-                                >
-                                    {dimensions.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 relative w-full h-full px-4 pb-4">
-                        <Scatter data={data} options={options} />
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     const renderWorkspace = () => {
         if (selectedCountries.length === 0) {
             return (
@@ -1009,12 +373,82 @@ export default function Analysis() {
 
                 {/* Render Selected View */}
                 <div id="analysis-workspace-content" className="w-full bg-[#F9F8FF] rounded-3xl pb-4">
-                    {viewTab === "time" && renderTimeCharts()}
-                    {viewTab === "bar" && renderBarCharts()}
-                    {viewTab === "radar" && renderRadarCharts()}
-                    {viewTab === "polar" && renderPolarAreaCharts()}
-                    {viewTab === "scatter" && renderScatterChart()}
-                    {viewTab === "table" && renderDataTable()}
+                    {viewTab === "time" && (
+                        <TimeSeriesView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            activeDimension={activeDimension}
+                            toggleDimension={toggleDimension}
+                            dimensionsMap={dimensionsMap}
+                            showForecast={showForecast}
+                            entityColors={countryColors}
+                            formatValue={formatValue}
+                        />
+                    )}
+                    {viewTab === "bar" && (
+                        <BarView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            dimensionsMap={dimensionsMap}
+                            activeDimension={activeDimension}
+                            toggleDimension={toggleDimension}
+                            entityColors={countryColors}
+                            formatValue={formatValue}
+                        />
+                    )}
+                    {viewTab === "radar" && (
+                        <RadarView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            dimensionsMap={dimensionsMap}
+                            entityColors={countryColors}
+                            formatValue={formatValue}
+                            globalMaxValues={globalMaxValues}
+                        />
+                    )}
+                    {viewTab === "polar" && (
+                        <PolarView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            dimensionsMap={dimensionsMap}
+                            entityColors={countryColors}
+                            formatValue={formatValue}
+                            globalMaxValues={globalMaxValues}
+                        />
+                    )}
+                    {viewTab === "scatter" && (
+                        <CorrelationView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            dimensionsMap={dimensionsMap}
+                            scatterX={scatterX}
+                            setScatterX={setScatterX}
+                            scatterY={scatterY}
+                            setScatterY={setScatterY}
+                            entityColors={countryColors}
+                            formatValue={formatValue}
+                        />
+                    )}
+                    {viewTab === "table" && (
+                        <DataTableView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            dimensionsMap={dimensionsMap}
+                            formatValue={formatValue}
+                        />
+                    )}
                 </div>
             </div>
         );
