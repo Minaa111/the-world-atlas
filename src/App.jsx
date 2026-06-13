@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Analysis from "./pages/Analysis";
 import About from "./pages/About";
 import Choropleth from "./pages/Choropleth";
+import DataDirectory from "./pages/DataDirectory";
 
 function App() {
   const location = useLocation();
@@ -21,6 +22,7 @@ function App() {
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/choropleth" element={<Choropleth />} />
           <Route path="/about" element={<About />} />
+          <Route path="/directory" element={<DataDirectory />} />
         </Routes>
       </div>
       {(!isAnalysisPage && !isChoroplethPage) && <Footer />}

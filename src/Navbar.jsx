@@ -6,6 +6,7 @@ function Navbar() {
     { name: "Home", path: "/" },
     { name: "Analysis Workspace", path: "/analysis" },
     { name: "Choropleth", path: "/choropleth" },
+    { name: "Data Directory", path: "/directory" },
     { name: "About The Project", path: "/about" },
   ];
 

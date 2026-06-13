@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { countries } from "../data/countries";
-import { Search } from "lucide-react";
+import { Search, ArrowDown } from "lucide-react";
 
 export default function CountriesList({ onSelect, selectedCountries = [] }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -21,31 +21,31 @@ export default function CountriesList({ onSelect, selectedCountries = [] }) {
     return (
         <div className="flex flex-col w-full h-full bg-white text-[#010104]">
             {/* Header / Filters */}
-            <div className="p-6 border-b border-[#EBE9FC] flex flex-col gap-4 sticky top-0 bg-white/95 backdrop-blur z-10">
-                <div className="relative flex items-center">
-                    <Search className="absolute left-4 text-gray-400 pointer-events-none" size={20} />
-                    <input 
-                        type="text"
-                        placeholder="Search by country name or ISO code..."
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#EBE9FC] bg-gray-50 focus:outline-none focus:border-[#010104] transition-colors"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                    {continents.map(cont => (
-                        <button
-                            key={cont}
-                            onClick={() => setActiveContinent(cont)}
-                            className={`px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap transition-all ${
-                                activeContinent === cont 
-                                ? "bg-[#010104] text-[#EBE9FC] shadow-md" 
-                                : "bg-[#EBE9FC]/50 text-[#010104] hover:bg-[#EBE9FC]"
-                            }`}
-                        >
-                            {cont}
-                        </button>
-                    ))}
+            <div className="p-6 border-b border-[#EBE9FC] sticky top-0 bg-white/95 backdrop-blur z-10">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Search Country</label>
+                        <input 
+                            type="text"
+                            placeholder="Search by country name or ISO code..."
+                            className="w-full px-4 py-2.5 rounded-xl border border-[#EBE9FC] bg-[#F9F8FF] focus:outline-none focus:ring-2 focus:ring-[#3A31D8]/50 text-[#010104] placeholder:text-gray-400 font-medium"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-full md:w-48">
+                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Continent</label>
+                        <div className="relative">
+                            <select
+                                value={activeContinent}
+                                onChange={(e) => setActiveContinent(e.target.value)}
+                                className="w-full px-4 pr-10 py-2.5 rounded-xl border border-[#EBE9FC] bg-[#F9F8FF] focus:outline-none focus:ring-2 focus:ring-[#3A31D8]/50 text-[#010104] font-medium appearance-none cursor-pointer"
+                            >
+                                {continents.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <ArrowDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -80,7 +80,7 @@ export default function CountriesList({ onSelect, selectedCountries = [] }) {
                                 <div className="flex flex-col">
                                     <span className="font-bold text-[15px]">{country.name}</span>
                                     <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-                                        {country.iso2} • {country.continent}
+                                        {country.iso3 || country.iso2} • {country.continent}
                                     </span>
                                 </div>
                             </div>
