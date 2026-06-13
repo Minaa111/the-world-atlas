@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Globe as GlobeIcon, Map as MapIcon, Loader2 } from 'lucide-react';
 import * as d3 from 'd3';
 import Globe from '../components/Globe';
-import Map from '../Map';
+import Map from '../components/Map';
 import lookup from 'country-code-lookup';
 
 const DIMENSIONS = [

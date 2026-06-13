@@ -17,7 +17,7 @@ import {
     Legend
 } from 'chart.js';
 import { Line, Radar, Scatter } from 'react-chartjs-2';
-import Map from "../Map";
+import Map from "../components/Map";
 import CountriesList from "../components/CountriesList";
 import Globe from "../components/Globe";
 

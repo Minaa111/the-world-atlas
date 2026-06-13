@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import Navbar from "./Navbar";
-import Footer from "./Footer";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Home from "./pages/Home";
-import Analysis from "./pages/Analysis";
+import AnalysisWorkspace from "./pages/AnalysisWorkspace";
 import About from "./pages/About";
 import Choropleth from "./pages/Choropleth";
 import DataDirectory from "./pages/DataDirectory";
@@ -19,7 +19,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Navigate to="/" replace />} />
-          <Route path="/analysis" element={<Analysis />} />
+          <Route path="/analysis" element={<AnalysisWorkspace />} />
           <Route path="/choropleth" element={<Choropleth />} />
           <Route path="/about" element={<About />} />
           <Route path="/directory" element={<DataDirectory />} />

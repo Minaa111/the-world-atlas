@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import Hero from "../Hero";
-import Map from "../Map";
+import Hero from "../components/Hero";
+import Map from "../components/Map";
 import Globe from "../components/Globe";
 import CountriesList from "../components/CountriesList";
 import { useNavigate } from "react-router-dom";
