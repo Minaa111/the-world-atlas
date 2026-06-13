@@ -74,12 +74,8 @@ export default function Analysis() {
         }
         return initial;
     });
-    const [activeDimensions, setActiveDimensions] = useState(() => {
-        const saved = localStorage.getItem('analysisActiveDimensions');
-        if (saved) {
-            try { return JSON.parse(saved); } catch (e) { }
-        }
-        return [];
+    const [activeDimension, setActiveDimension] = useState(() => {
+        return localStorage.getItem('analysisActiveDimension') || "Gross National Income (GNI)";
     });
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [modalTab, setModalTab] = useState("globe");
@@ -100,8 +96,8 @@ export default function Analysis() {
     }, [selectedCountries]);
 
     useEffect(() => {
-        localStorage.setItem('analysisActiveDimensions', JSON.stringify(activeDimensions));
-    }, [activeDimensions]);
+        localStorage.setItem('analysisActiveDimension', activeDimension);
+    }, [activeDimension]);
 
     useEffect(() => {
         localStorage.setItem('analysisScatterX', scatterX);
@@ -153,14 +149,7 @@ export default function Analysis() {
     };
 
     const toggleDimension = (dim) => {
-        let newActive;
-        if (activeDimensions.includes(dim)) {
-            newActive = activeDimensions.filter(d => d !== dim);
-        } else {
-            newActive = [...activeDimensions, dim];
-        }
-        newActive.sort((a, b) => dimensions.indexOf(a) - dimensions.indexOf(b));
-        setActiveDimensions(newActive);
+        setActiveDimension(dim);
     };
 
     const handleAddCountry = (countryObj) => {
@@ -286,14 +275,14 @@ export default function Analysis() {
                     <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Indicators</span>
                     <div className="flex flex-wrap items-center gap-3 w-full">
                         {dimensions.map(dim => {
-                            const isActive = activeDimensions.includes(dim);
+                            const isActive = activeDimension === dim;
                             return (
                                 <button
                                     key={dim}
                                     onClick={() => toggleDimension(dim)}
-                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 ${isActive
-                                            ? 'bg-[#010104] text-[#EBE9FC] shadow-md transform scale-105'
-                                            : 'bg-white text-[#010104] hover:bg-gray-50 border border-[#EBE9FC]'
+                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 border ${isActive
+                                            ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] shadow-md'
+                                            : 'bg-white text-[#010104] hover:bg-gray-50 border-[#EBE9FC]'
                                         }`}
                                 >
                                     {dim}
@@ -303,12 +292,7 @@ export default function Analysis() {
                     </div>
                 </div>
 
-                {activeDimensions.length === 0 && (
-                    <div className="text-center text-gray-500 py-12 bg-white rounded-3xl border border-[#EBE9FC]">
-                        Select one or more indicators above to view time-series data.
-                    </div>
-                )}
-                {activeDimensions.map(dimName => {
+                {[activeDimension].map(dimName => {
                     const dimInfo = dimensionsMap[dimName];
                     const metric = dimInfo.key;
 
@@ -492,7 +476,8 @@ export default function Analysis() {
                     const color = countryColors[idx % countryColors.length];
 
                     const dataPoints = dimensions.map(dim => {
-                        const raw = latest[dimensionsMap[dim].key] || 0;
+                        const raw = latest[dimensionsMap[dim].key];
+                        if (raw === undefined || raw === null) return null;
                         return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
                     });
 
@@ -507,6 +492,7 @@ export default function Analysis() {
                                 pointBackgroundColor: color,
                                 pointBorderColor: '#fff',
                                 borderWidth: 2,
+                                spanGaps: true,
                             }
                         ]
                     };
@@ -517,12 +503,18 @@ export default function Analysis() {
                         layout: { padding: 20 },
                         scales: {
                             r: {
+                                min: 0,
+                                max: 100,
                                 angleLines: { color: 'rgba(0,0,0,0.1)' },
                                 grid: { color: 'rgba(0,0,0,0.05)' },
                                 pointLabels: {
                                     padding: 24,
                                     font: { size: 12, weight: 'bold' },
-                                    color: '#010104',
+                                    color: function(context) {
+                                        const dimName = dimensions[context.index];
+                                        const raw = latest[dimensionsMap[dimName].key];
+                                        return (raw === undefined || raw === null) ? '#9ca3af' : '#010104';
+                                    },
                                     callback: function (value, index) {
                                         const dimName = dimensions[index];
                                         const max = globalMaxValues[dimensionsMap[dimName].key];
@@ -531,7 +523,7 @@ export default function Analysis() {
                                         return [value, `(Max: ${maxStr})`];
                                     }
                                 },
-                                ticks: { display: false, maxTicksLimit: 5 }
+                                ticks: { display: false, stepSize: 20 }
                             }
                         },
                         interaction: {
@@ -545,7 +537,7 @@ export default function Analysis() {
                                     label: function (context) {
                                         const dimName = dimensions[context.dataIndex];
                                         const rawVal = latest[dimensionsMap[dimName].key];
-                                        return rawVal !== null ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data`;
+                                        return (rawVal !== null && rawVal !== undefined) ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data Available`;
                                     }
                                 }
                             }
@@ -596,14 +588,14 @@ export default function Analysis() {
                     <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Indicators</span>
                     <div className="flex flex-wrap items-center gap-3 w-full">
                         {dimensions.map(dim => {
-                            const isActive = activeDimensions.includes(dim);
+                            const isActive = activeDimension === dim;
                             return (
                                 <button
                                     key={dim}
                                     onClick={() => toggleDimension(dim)}
-                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 ${isActive
-                                            ? 'bg-[#010104] text-[#EBE9FC] shadow-md transform scale-105'
-                                            : 'bg-white text-[#010104] hover:bg-gray-50 border border-[#EBE9FC]'
+                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 border ${isActive
+                                            ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] shadow-md'
+                                            : 'bg-white text-[#010104] hover:bg-gray-50 border-[#EBE9FC]'
                                         }`}
                                 >
                                     {dim}
@@ -613,12 +605,7 @@ export default function Analysis() {
                     </div>
                 </div>
 
-                {activeDimensions.length === 0 && (
-                    <div className="text-center text-gray-500 py-12 bg-white rounded-3xl border border-[#EBE9FC]">
-                        Select one or more indicators above to view bar charts.
-                    </div>
-                )}
-                {activeDimensions.map(dimName => {
+                {[activeDimension].map(dimName => {
                     const dimInfo = dimensionsMap[dimName];
                     const metric = dimInfo.key;
 
@@ -702,13 +689,19 @@ export default function Analysis() {
                 {selectedCountries.map((country, idx) => {
                     const latest = getLatestValues(country.iso3);
 
-                    const dataPoints = dimensions.map(dim => {
-                        const raw = latest[dimensionsMap[dim].key] || 0;
+                    const isMissing = dimensions.map(dim => {
+                        const raw = latest[dimensionsMap[dim].key];
+                        return raw === undefined || raw === null;
+                    });
+
+                    const dataPoints = dimensions.map((dim, i) => {
+                        if (isMissing[i]) return 100;
+                        const raw = latest[dimensionsMap[dim].key];
                         return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
                     });
 
-                    const bgColors = dimensions.map((_, i) => countryColors[i % countryColors.length] + '80');
-                    const bdColors = dimensions.map((_, i) => countryColors[i % countryColors.length]);
+                    const bgColors = dimensions.map((_, i) => isMissing[i] ? 'rgba(229, 231, 235, 0.4)' : countryColors[i % countryColors.length] + '80');
+                    const bdColors = dimensions.map((_, i) => isMissing[i] ? '#9ca3af' : countryColors[i % countryColors.length]);
 
                     const data = {
                         labels: dimensions,
@@ -719,6 +712,7 @@ export default function Analysis() {
                                 backgroundColor: bgColors,
                                 borderColor: bdColors,
                                 borderWidth: 1,
+                                borderDash: (ctx) => isMissing[ctx.dataIndex] ? [5, 5] : []
                             }
                         ]
                     };
@@ -729,7 +723,9 @@ export default function Analysis() {
                         layout: { padding: 20 },
                         scales: {
                             r: {
-                                ticks: { display: false },
+                                min: 0,
+                                max: 100,
+                                ticks: { display: false, stepSize: 20 },
                                 grid: { color: 'rgba(0,0,0,0.05)' },
                                 angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }
                             }
@@ -746,7 +742,7 @@ export default function Analysis() {
                                     label: function (context) {
                                         const dimName = dimensions[context.dataIndex];
                                         const rawVal = latest[dimensionsMap[dimName].key];
-                                        return rawVal !== null ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data`;
+                                        return (rawVal !== null && rawVal !== undefined) ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data Available`;
                                     }
                                 }
                             }
@@ -782,34 +778,13 @@ export default function Analysis() {
     const renderDataTable = () => {
         return (
             <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-                <div className="sticky top-[80px] z-30 bg-[#F9F8FF] flex flex-col items-start gap-3 py-4 -mt-8 -mx-8 px-8 border-b border-[#EBE9FC]">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Indicators</span>
-                    <div className="flex flex-wrap items-center gap-3 w-full">
-                        {dimensions.map(dim => {
-                            const isActive = activeDimensions.includes(dim);
-                            return (
-                                <button
-                                    key={dim}
-                                    onClick={() => toggleDimension(dim)}
-                                    className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 ${isActive
-                                            ? 'bg-[#010104] text-[#EBE9FC] shadow-md transform scale-105'
-                                            : 'bg-white text-[#010104] hover:bg-gray-50 border border-[#EBE9FC]'
-                                        }`}
-                                >
-                                    {dim}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
                 <div className="bg-white rounded-3xl shadow-sm border border-[#EBE9FC] w-full overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-50 border-b border-[#EBE9FC]">
                                     <th className="p-4 font-bold text-[#010104] whitespace-nowrap sticky left-0 bg-gray-50 z-10 border-r border-[#EBE9FC]">Country</th>
-                                    {activeDimensions.map(dim => (
+                                    {dimensions.map(dim => (
                                         <th key={dim} className="p-4 font-bold text-gray-600 whitespace-nowrap min-w-[150px]">{dim}</th>
                                     ))}
                                 </tr>
@@ -829,7 +804,7 @@ export default function Analysis() {
                                                 )}
                                                 {country.name}
                                             </td>
-                                            {activeDimensions.map(dim => {
+                                            {dimensions.map(dim => {
                                                 const val = latest[dimensionsMap[dim].key];
                                                 return (
                                                     <td key={dim} className="p-4 font-medium text-gray-600">
@@ -842,7 +817,7 @@ export default function Analysis() {
                                 })}
                                 {selectedCountries.length === 0 && (
                                     <tr>
-                                        <td colSpan={activeDimensions.length + 1} className="p-8 text-center text-gray-500">
+                                        <td colSpan={dimensions.length + 1} className="p-8 text-center text-gray-500">
                                             No countries selected.
                                         </td>
                                     </tr>
@@ -1011,26 +986,21 @@ export default function Analysis() {
 
                     {/* AI Forecast & Download */}
                     <div className="flex gap-4">
-                        <button
-                            onClick={handleDownloadCSV}
-                            className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-[14px] transition-all shadow-sm border bg-white text-gray-500 border-[#EBE9FC] hover:border-gray-300 hover:text-[#010104]"
-                        >
-                            <Download size={18} /> Download CSV
-                        </button>
-                        <button
-                            onClick={handleDownloadPDF}
-                            disabled={isExporting}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-[14px] transition-all shadow-sm border ${isExporting ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" : "bg-white text-gray-500 border-[#EBE9FC] hover:border-gray-300 hover:text-[#010104]"}`}
-                        >
-                            <Download size={18} /> {isExporting ? "Generating PDF..." : "Export as PDF"}
-                        </button>
+                        {viewTab === "table" && (
+                            <button
+                                onClick={handleDownloadCSV}
+                                className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-[14px] transition-all shadow-sm border bg-white text-gray-500 border-[#EBE9FC] hover:border-gray-300 hover:text-[#010104]"
+                            >
+                                <Download size={18} /> Download CSV
+                            </button>
+                        )}
 
                         {viewTab === "time" && (
                             <button
                                 onClick={() => setShowForecast(!showForecast)}
-                                className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-[14px] transition-all shadow-sm border ${showForecast ? "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100" : "bg-white text-gray-500 border-[#EBE9FC] hover:border-indigo-200 hover:text-indigo-600"}`}
+                                className={`group flex justify-center items-center gap-2 px-5 py-3 w-[220px] rounded-xl font-bold text-[14px] transition-all shadow-sm border ${showForecast ? "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100" : "bg-white text-gray-500 border-[#EBE9FC] hover:border-indigo-200 hover:text-indigo-600"}`}
                             >
-                                <Sparkles size={18} className={showForecast ? "text-indigo-600" : "text-gray-400"} />
+                                <Sparkles size={18} className={`transition-colors ${showForecast ? "text-indigo-600" : "text-gray-400 group-hover:text-indigo-600"}`} />
                                 {showForecast ? "5-Year Forecast Active" : "Enable AI Forecast"}
                             </button>
                         )}
