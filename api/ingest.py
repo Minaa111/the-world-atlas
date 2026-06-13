@@ -2,7 +2,7 @@ import pandas as pd
 from index import app, db, AnnualIndicator
 import os
 
-datasets_dir = '../datasets'
+datasets_dir = '../src/global/data/datasets'
 
 def process_wb_csv(filepath, value_name):
     print(f"Processing {filepath}...")

@@ -4,10 +4,14 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
+import { ScopeProvider } from './shared/context/ScopeContext.jsx'
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <ScopeProvider>
+        <App />
+      </ScopeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

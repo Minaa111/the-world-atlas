@@ -1029,7 +1029,7 @@ export default function Analysis() {
                     <div className="flex justify-between items-center w-full">
                         <h1 className="text-4xl font-bold text-[#010104] tracking-tight">Analysis</h1>
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate('/global')}
                             className="text-[#010104] hover:bg-gray-100 p-2 rounded-full transition-colors border border-transparent hover:border-gray-200"
                         >
                             <X size={28} />

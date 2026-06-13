@@ -1,4 +1,4 @@
-import heroImage from '../assets/hero.jpg';
+import heroImage from '../../assets/hero.jpg';
 
 function Hero() {
     return (
@@ -11,7 +11,7 @@ function Hero() {
 
             <div className="relative z-10">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4 text-text">
-                    The Inequality Atlas
+                    The World Atlas
                 </h1>
 
                 <p className="max-w-xl text-gray-600 mb-6 text-text">

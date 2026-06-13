@@ -8,7 +8,7 @@ export default function About() {
 
                 <div className="text-[#010104] opacity-80 space-y-6 text-lg leading-relaxed font-medium">
                     <p>
-                        The Inequality Atlas is a data-driven platform for exploring and visualizing key global development indicators across countries, including income, health, education, safety, and environmental quality. While the platform is built with careful attention to data sources and presentation, it remains an academic graduate project rather than an official or institutional resource.
+                        The World Atlas is a data-driven platform for exploring and visualizing key global development indicators across countries, including income, health, education, safety, and environmental quality. While the platform is built with careful attention to data sources and presentation, it remains an academic graduate project rather than an official or institutional resource.
                     </p>
 
                     <h2 className="text-2xl font-bold text-[#010104] mt-12 mb-4 opacity-100">Data Sources</h2>
@@ -61,6 +61,10 @@ export default function About() {
 
                     <p>
                         The data presented on this platform is sourced from publicly available datasets and may be subject to limitations such as inconsistencies, missing values, or variations in reporting standards between countries. As a result, the visualizations and comparisons provided may not fully reflect real-world conditions or current realities.
+                    </p>
+
+                    <p>
+                        <strong>Note on Individual Country Profiles:</strong> The current data available for the United States profile and its individual states is mock-generated for demonstration purposes and does not represent real-world statistics.
                     </p>
 
                     <p>

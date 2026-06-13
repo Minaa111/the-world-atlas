@@ -22,7 +22,7 @@ export default function Home() {
     }, []);
 
     const handleCountrySelect = (countryObj) => {
-        navigate('/analysis', { state: { initialCountry: countryObj } });
+        navigate('/global/analysis', { state: { initialCountry: countryObj } });
     };
 
     return (

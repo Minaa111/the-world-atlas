@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-datasets_dir = '../datasets'
+datasets_dir = '../src/global/data/datasets'
 
 files = [
     'gini.csv',

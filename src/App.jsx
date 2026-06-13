@@ -1,17 +1,23 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import Home from "./pages/Home";
-import AnalysisWorkspace from "./pages/AnalysisWorkspace";
-import About from "./pages/About";
-import Choropleth from "./pages/Choropleth";
-import DataDirectory from "./pages/DataDirectory";
+import Navbar from "./shared/components/Navbar";
+import Footer from "./shared/components/Footer";
+import Home from "./global/pages/Home";
+import AnalysisWorkspace from "./global/pages/AnalysisWorkspace";
+import About from "./global/pages/About";
+import Choropleth from "./global/pages/Choropleth";
+import DataDirectory from "./global/pages/DataDirectory";
+
+// USA Profile
+import USAHome from "./countries/usa/pages/USAHome";
+import USAAnalysisWorkspace from "./countries/usa/pages/USAAnalysisWorkspace";
+import USAChoropleth from "./countries/usa/pages/USAChoropleth";
+import USADataDirectory from "./countries/usa/pages/USADataDirectory";
 
 function App() {
   const location = useLocation();
-  const isAnalysisPage = location.pathname === '/analysis';
-  const isChoroplethPage = location.pathname === '/choropleth';
+  const isAnalysisPage = location.pathname.includes('/analysis');
+  const isChoroplethPage = location.pathname.includes('/choropleth');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -22,12 +28,22 @@ function App() {
       {(!isAnalysisPage && !isChoroplethPage) && <Navbar />}
       <div className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Navigate to="/" replace />} />
-          <Route path="/analysis" element={<AnalysisWorkspace />} />
-          <Route path="/choropleth" element={<Choropleth />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/directory" element={<DataDirectory />} />
+          {/* Global Routes */}
+          <Route path="/" element={<Navigate to="/global" replace />} />
+          <Route path="/home" element={<Navigate to="/global" replace />} />
+          <Route path="/global" element={<Home />} />
+          <Route path="/global/analysis" element={<AnalysisWorkspace />} />
+          <Route path="/global/choropleth" element={<Choropleth />} />
+          <Route path="/global/about" element={<About />} />
+          <Route path="/global/directory" element={<DataDirectory />} />
+          <Route path="/about" element={<Navigate to="/global/about" replace />} /> {/* Legacy compatibility */}
+
+          {/* Country Profile Routes */}
+          <Route path="/country" element={<Navigate to="/country/usa" replace />} />
+          <Route path="/country/usa" element={<USAHome />} />
+          <Route path="/country/usa/analysis" element={<USAAnalysisWorkspace />} />
+          <Route path="/country/usa/choropleth" element={<USAChoropleth />} />
+          <Route path="/country/usa/directory" element={<USADataDirectory />} />
         </Routes>
       </div>
       {(!isAnalysisPage && !isChoroplethPage) && <Footer />}
