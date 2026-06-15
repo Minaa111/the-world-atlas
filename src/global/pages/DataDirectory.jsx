@@ -216,7 +216,7 @@ function DataDirectory() {
   const handleYearInputChange = (e) => {
       setYearInput(e.target.value);
       const val = parseInt(e.target.value);
-      if (!isNaN(val) && val >= 1990 && val <= 2022) {
+      if (!isNaN(val) && val >= 1990 && val <= 2025) {
           setYear(val);
       }
   };
@@ -389,18 +389,18 @@ function DataDirectory() {
                     <input 
                         type="number" 
                         min="1990" 
-                        max="2022"
+                        max="2025"
                         value={yearInput}
                         onChange={handleYearInputChange}
                         className="w-16 bg-[#F9F8FF] border border-[#EBE9FC] rounded-md px-2 py-1 text-center font-bold text-[#010104] outline-none focus:border-[#3A31D8]"
                     />
                 </div>
-                <span>2022</span>
+                <span>2025</span>
             </div>
             <input 
                 type="range" 
                 min="1990" 
-                max="2022" 
+                max="2025" 
                 value={year} 
                 onChange={handleYearChange}
                 className="w-full h-2 bg-[#EBE9FC] rounded-lg appearance-none cursor-pointer accent-[#3A31D8]"

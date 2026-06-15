@@ -143,6 +143,83 @@ def latest_data():
             
     return jsonify(list(latest_by_country.values()))
 
+@app.route('/api/data/aggregates', methods=['GET'])
+@cache.cached(timeout=86400)
+def aggregates_data():
+    all_data = AnnualIndicator.query.order_by(AnnualIndicator.year.desc()).all()
+    
+    import pycountry
+    
+    # Calculate accurate latest values per dimension
+    latest_by_country = {}
+    dimensions = ['life_expectancy', 'pm25', 'literacy_rate', 'gni', 'gini', 'homicide_rate']
+    
+    for record in all_data:
+        c = record.country
+        if c not in latest_by_country:
+            latest_by_country[c] = {
+                'country': c,
+                'year': record.year,
+                'life_expectancy': None,
+                'pm25': None,
+                'literacy_rate': None,
+                'gni': None,
+                'gini': None,
+                'homicide_rate': None
+            }
+        
+        # Take the most recent non-null value for each dimension
+        for dim in dimensions:
+            if latest_by_country[c][dim] is None and getattr(record, dim) is not None:
+                latest_by_country[c][dim] = getattr(record, dim)
+                latest_by_country[c][f"{dim}_year"] = record.year
+            
+    latest_records = list(latest_by_country.values())
+    
+    def get_avg(dimension):
+        valid = [r for r in latest_records if r[dimension] is not None and pycountry.countries.get(alpha_3=r['country']) is not None]
+        vals = [r[dimension] for r in valid]
+        return sum(vals) / len(vals) if vals else None
+        
+    def get_max(dimension):
+        valid = [r for r in latest_records if r[dimension] is not None and pycountry.countries.get(alpha_3=r['country']) is not None]
+        if not valid: return None
+        max_record = max(valid, key=lambda x: x[dimension])
+        return {"country": max_record['country'], "value": max_record[dimension], "year": max_record.get(f"{dimension}_year")}
+        
+    def get_min(dimension):
+        valid = [r for r in latest_records if r[dimension] is not None and pycountry.countries.get(alpha_3=r['country']) is not None]
+        if not valid: return None
+        min_record = min(valid, key=lambda x: x[dimension])
+        return {"country": min_record['country'], "value": min_record[dimension], "year": min_record.get(f"{dimension}_year")}
+
+    # Calculate global trends over the last 15 years
+    all_years = sorted(list(set([r.year for r in all_data])))
+    recent_years = all_years[-15:]
+    
+    trends = {dim: [] for dim in dimensions}
+    
+    for y in recent_years:
+        # Get all country records for this year
+        y_data = [r for r in all_data if r.year == y and pycountry.countries.get(alpha_3=r.country) is not None]
+        for dim in dimensions:
+            vals = [getattr(r, dim) for r in y_data if getattr(r, dim) is not None]
+            if vals:
+                trends[dim].append({'year': y, 'value': sum(vals) / len(vals)})
+            else:
+                trends[dim].append({'year': y, 'value': None})
+
+    return jsonify({
+        "total_countries": len([c for c in latest_records if pycountry.countries.get(alpha_3=c['country'])]),
+        "avg_life_expectancy": get_avg("life_expectancy"),
+        "avg_pm25": get_avg("pm25"),
+        "avg_literacy_rate": get_avg("literacy_rate"),
+        "avg_homicide_rate": get_avg("homicide_rate"),
+        "max_gni": get_max("gni"),
+        "min_gini": get_min("gini"),
+        "trends": trends
+    })
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
