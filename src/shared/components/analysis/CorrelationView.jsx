@@ -1,5 +1,6 @@
 import React from 'react';
 import { Scatter } from 'react-chartjs-2';
+import IndicatorSelector from './IndicatorSelector';
 
 export default function CorrelationView({
     entities,
@@ -12,12 +13,15 @@ export default function CorrelationView({
     scatterY,
     setScatterY,
     entityColors,
-    formatValue
+    formatValue,
+    hiddenCountries
 }) {
     const xDim = dimensionsMap[scatterX];
     const yDim = dimensionsMap[scatterY];
 
-    const datasets = entities.map((entity, idx) => {
+    const datasets = entities.flatMap((entity, idx) => {
+        if (hiddenCountries?.has(entity[entityKeyField])) return [];
+
         const cData = chartData[entity[entityKeyField]] || [];
         const color = entityColors[idx % entityColors.length];
 
@@ -32,13 +36,13 @@ export default function CorrelationView({
             }
         });
 
-        return {
+        return [{
             label: entity.name,
             data: points,
             backgroundColor: color,
             pointRadius: 6,
             pointHoverRadius: 8
-        };
+        }];
     });
 
     const data = { datasets };
@@ -67,34 +71,26 @@ export default function CorrelationView({
     };
 
     return (
-        <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col" style={{ height: 'calc(100vh - 400px)', minHeight: '300px' }}>
+        <div className="flex flex-col w-full h-full z-10 relative bg-white p-6">
+            <div className="flex-1 w-full flex flex-col min-h-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <h3 className="text-xl font-bold text-[#010104]">Correlation Analysis</h3>
                     <div className="flex flex-wrap gap-4 items-center">
                         <div className="flex items-center gap-2">
                             <label className="text-sm font-bold text-gray-500">Y-Axis:</label>
-                            <select
-                                value={scatterY}
-                                onChange={e => setScatterY(e.target.value)}
-                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold bg-gray-50 focus:outline-none focus:border-indigo-500"
-                            >
-                                {dimensions.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
+                            <div className="w-[240px]">
+                                <IndicatorSelector activeDimension={scatterY} onChange={setScatterY} />
+                            </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <label className="text-sm font-bold text-gray-500">X-Axis:</label>
-                            <select
-                                value={scatterX}
-                                onChange={e => setScatterX(e.target.value)}
-                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold bg-gray-50 focus:outline-none focus:border-indigo-500"
-                            >
-                                {dimensions.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
+                            <div className="w-[240px]">
+                                <IndicatorSelector activeDimension={scatterX} onChange={setScatterX} />
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex-1 relative w-full h-full">
+                <div className="flex-1 relative w-full min-h-0">
                     <Scatter data={data} options={options} />
                 </div>
                 <div className="w-full text-center mt-4 text-xs text-gray-400 font-medium bg-gray-50 py-2 rounded-lg">

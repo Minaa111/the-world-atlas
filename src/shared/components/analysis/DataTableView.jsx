@@ -6,7 +6,9 @@ export default function DataTableView({
     chartData,
     dimensions,
     dimensionsMap,
-    formatValue
+    formatValue,
+    hiddenCountries,
+    hiddenColumns
 }) {
     const getLatestValues = (entityId) => {
         const cData = chartData[entityId] || [];
@@ -24,9 +26,13 @@ export default function DataTableView({
         return latest;
     };
 
+
+
+    const visibleDimensions = dimensions.filter(dim => !hiddenColumns.has(dim));
+
     return (
-        <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-            <div className="bg-white rounded-3xl shadow-sm border border-[#EBE9FC] w-full overflow-hidden">
+        <div className="flex flex-col w-full h-full p-6 z-10 relative bg-white overflow-hidden">
+            <div className="w-full flex-1 overflow-y-auto rounded-xl border border-[#EBE9FC]">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -34,13 +40,13 @@ export default function DataTableView({
                                 <th className="p-4 font-bold text-[#010104] whitespace-nowrap sticky left-0 bg-gray-50 z-10 border-r border-[#EBE9FC]">
                                     {entityKeyField === 'iso3' ? 'Country' : 'State'}
                                 </th>
-                                {dimensions.map(dim => (
+                                {visibleDimensions.map(dim => (
                                     <th key={dim} className="p-4 font-bold text-gray-600 whitespace-nowrap min-w-[150px]">{dim}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {entities.map(entity => {
+                            {entities.filter(e => !hiddenCountries?.has(e[entityKeyField])).map(entity => {
                                 const latest = getLatestValues(entity[entityKeyField]);
                                 return (
                                     <tr key={entity[entityKeyField]} className="border-b border-gray-100 hover:bg-[#F9F8FF] transition-colors">
@@ -54,11 +60,11 @@ export default function DataTableView({
                                             )}
                                             {entity.name}
                                         </td>
-                                        {dimensions.map(dim => {
+                                        {visibleDimensions.map(dim => {
                                             const val = latest[dimensionsMap[dim].key];
                                             return (
-                                                <td key={dim} className="p-4 font-medium text-gray-600">
-                                                    {val !== null && val !== undefined ? formatValue(val) : <span className="text-gray-400">N/A</span>}
+                                                <td key={dim} className="p-4 text-gray-600">
+                                                    {val !== null && val !== undefined ? formatValue(val) : <span className="text-gray-300">N/A</span>}
                                                 </td>
                                             );
                                         })}

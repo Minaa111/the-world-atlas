@@ -9,7 +9,9 @@ export default function RadarView({
     dimensionsMap,
     entityColors,
     formatValue,
-    globalMaxValues
+    globalMaxValues,
+    hiddenCountries,
+    gridCols
 }) {
     const getLatestValues = (entityId) => {
         const cData = chartData[entityId] || [];
@@ -27,9 +29,17 @@ export default function RadarView({
         return latest;
     };
 
+    const gridClassMap = {
+        1: 'md:grid-cols-1',
+        2: 'md:grid-cols-2',
+        3: 'md:grid-cols-3',
+        4: 'md:grid-cols-4'
+    };
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 z-10 relative bg-[#F9F8FF] w-full">
-            {entities.map((entity, idx) => {
+        <div className="flex flex-col w-full h-full p-6 z-10 relative bg-white overflow-hidden">
+            <div className={`grid grid-cols-1 ${gridClassMap[gridCols]} gap-6 flex-1 overflow-y-auto min-h-0 pb-6`}>
+            {entities.filter(e => !hiddenCountries?.has(e[entityKeyField])).map((entity, idx) => {
                 const latest = getLatestValues(entity[entityKeyField]);
                 const color = entityColors[idx % entityColors.length];
 
@@ -114,7 +124,7 @@ export default function RadarView({
                 };
 
                 return (
-                    <div key={entity[entityKeyField]} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col items-center" style={{ height: '600px' }}>
+                    <div key={entity[entityKeyField]} className="bg-gray-50 p-6 rounded-3xl border border-[#EBE9FC] w-full flex flex-col items-center" style={{ height: '600px' }}>
                         <div className="flex items-center gap-3 mb-6 w-full pb-4 border-b border-[#EBE9FC]">
                             {entity.code && (
                                 <img
@@ -135,6 +145,7 @@ export default function RadarView({
                     </div>
                 );
             })}
+        </div>
         </div>
     );
 }

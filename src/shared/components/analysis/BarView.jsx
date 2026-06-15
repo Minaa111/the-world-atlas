@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
+import IndicatorSelector from './IndicatorSelector';
 
 export default function BarView({
     entities,
@@ -10,7 +11,8 @@ export default function BarView({
     activeDimension,
     toggleDimension,
     entityColors,
-    formatValue
+    formatValue,
+    hiddenCountries
 }) {
     const getLatestValues = (entityId) => {
         const cData = chartData[entityId] || [];
@@ -29,25 +31,11 @@ export default function BarView({
     };
 
     return (
-        <div className="flex flex-col w-full gap-8 p-8 z-10 relative bg-[#F9F8FF]">
-            <div className="sticky top-[80px] z-30 bg-[#F9F8FF] flex flex-col items-start gap-3 py-4 -mt-8 -mx-8 px-8 border-b border-[#EBE9FC]">
-                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Indicators</span>
-                <div className="flex flex-wrap items-center gap-3 w-full">
-                    {dimensions.map(dim => {
-                        const isActive = activeDimension === dim;
-                        return (
-                            <button
-                                key={dim}
-                                onClick={() => toggleDimension(dim)}
-                                className={`px-5 py-2 rounded-full font-bold text-sm transition-all duration-200 border ${isActive
-                                        ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] shadow-md'
-                                        : 'bg-white text-[#010104] hover:bg-gray-50 border-[#EBE9FC]'
-                                    }`}
-                            >
-                                {dim}
-                            </button>
-                        );
-                    })}
+        <div className="flex flex-col w-full h-full z-10 relative bg-white">
+            <div className="flex items-center justify-between gap-3 p-6 border-b border-[#EBE9FC] shrink-0">
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Select Indicator</span>
+                <div className="flex-1 max-w-md">
+                    <IndicatorSelector activeDimension={activeDimension} onChange={toggleDimension} />
                 </div>
             </div>
 
@@ -61,6 +49,8 @@ export default function BarView({
                 const borderColors = [];
 
                 entities.forEach((entity, idx) => {
+                    if (hiddenCountries?.has(entity[entityKeyField])) return;
+
                     const latest = getLatestValues(entity[entityKeyField]);
                     labels.push(entity.name);
                     dataPoints.push(latest[metric]);
@@ -107,9 +97,9 @@ export default function BarView({
                 };
 
                 return (
-                    <div key={dimName} className="bg-white p-6 rounded-3xl shadow-sm border border-[#EBE9FC] w-full flex flex-col" style={{ height: '400px' }}>
-                        <h3 className="text-xl font-bold mb-4 text-[#010104]">{dimInfo.label}</h3>
-                        <div className="flex-1 relative w-full h-full">
+                    <div key={dimName} className="flex-1 w-full flex flex-col p-6 min-h-0">
+                        <h3 className="text-xl font-bold mb-4 text-[#010104] shrink-0">{dimInfo.label}</h3>
+                        <div className="flex-1 relative w-full min-h-0">
                             <Bar data={data} options={options} />
                         </div>
                     </div>
