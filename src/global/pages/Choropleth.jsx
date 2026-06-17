@@ -35,6 +35,18 @@ export default function Choropleth() {
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
+    const [isScrollable, setIsScrollable] = useState(false);
+
+    useEffect(() => {
+        const checkScrollable = () => {
+            if (dimensionsRef.current) {
+                setIsScrollable(dimensionsRef.current.scrollWidth > dimensionsRef.current.clientWidth);
+            }
+        };
+        checkScrollable();
+        window.addEventListener('resize', checkScrollable);
+        return () => window.removeEventListener('resize', checkScrollable);
+    }, []);
 
     const onMouseDown = (e) => {
         setIsMouseDown(true);
@@ -208,7 +220,7 @@ export default function Choropleth() {
                             <button
                                 key={dim.id}
                                 onClick={() => setDimension(dim.id)}
-                                className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm border ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'} ${
+                                className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm border ${isScrollable ? (isMouseDown ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'} ${
                                     isActive 
                                         ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] transform scale-105' 
                                         : 'bg-white text-gray-600 hover:text-[#010104] border-[#EBE9FC] hover:border-gray-300'
