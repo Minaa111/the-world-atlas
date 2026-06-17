@@ -23,7 +23,7 @@ export const countryRegistry = {
         dimensionsMap: usDimensionsMap,
         dimensions: usDimensions,
         mockDataFn: getMockUSData,
-        regionCodePrefix: 'us-', // for flagcdn
+        getFlagUrl: (code) => `https://flagcdn.com/w40/us-${code.toLowerCase()}.png`,
         regionKeyField: 'name'
     },
     can: {
@@ -35,7 +35,7 @@ export const countryRegistry = {
         dimensionsMap: canDimensionsMap,
         dimensions: canDimensions,
         mockDataFn: getMockCanData,
-        regionCodePrefix: 'ca-', // for flagcdn
+        getFlagUrl: (code) => `https://flagcdn.com/w40/ca.png`,
         regionKeyField: 'name'
     },
     aus: {
@@ -47,7 +47,7 @@ export const countryRegistry = {
         dimensionsMap: ausDimensionsMap,
         dimensions: ausDimensions,
         mockDataFn: getMockAusData,
-        regionCodePrefix: 'au-', // for flagcdn
+        getFlagUrl: (code) => `https://flagcdn.com/w40/au.png`,
         regionKeyField: 'name'
     }
 };

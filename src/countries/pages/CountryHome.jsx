@@ -123,19 +123,9 @@ export default function CountryHome() {
             const allRegionNames = config.regions.map(r => r.name);
             const mockData = config.mockDataFn ? config.mockDataFn(allRegionNames, false) : {}; // No forecast for home page stats
             
-            // Pick the first 4 metrics from the country's dimensionsMap
-            const dimensions = Object.keys(config.dimensionsMap).slice(0, 4);
             const calculatedAggs = [];
 
-            const icons = [Activity, Wind, BookOpen, Target, TrendingUp, AlertCircle];
-            const highlights = [
-                { text: "text-emerald-600 bg-emerald-50", trend: "text-emerald-500" },
-                { text: "text-blue-600 bg-blue-50", trend: "text-blue-500" },
-                { text: "text-amber-600 bg-amber-50", trend: "text-amber-500" },
-                { text: "text-purple-600 bg-purple-50", trend: "text-purple-500" }
-            ];
-
-            dimensions.forEach((dimName, idx) => {
+            dimensions.forEach((dimName) => {
                 const dimKey = config.dimensionsMap[dimName].key;
                 
                 // Group all values by year to create a trend line, and get latest average
@@ -161,11 +151,7 @@ export default function CountryHome() {
                 const latestValue = trendData.length > 0 ? trendData[trendData.length - 1].value : 0;
                 
                 calculatedAggs.push({
-                    title: `Avg ${dimName}`,
                     value: latestValue,
-                    icon: icons[idx % icons.length],
-                    highlightClass: highlights[idx % highlights.length].text,
-                    trendColorClass: highlights[idx % highlights.length].trend,
                     trendData: trendData
                 });
             });
@@ -177,6 +163,24 @@ export default function CountryHome() {
     }, [countryId, config, navigate]);
 
     if (!config) return null;
+
+    const dimensions = Object.keys(config.dimensionsMap).slice(0, 6);
+    const icons = [Activity, Wind, BookOpen, Target, TrendingUp, AlertCircle];
+    const highlights = [
+        { text: "text-emerald-600 bg-emerald-50", trend: "text-emerald-500" },
+        { text: "text-blue-600 bg-blue-50", trend: "text-blue-500" },
+        { text: "text-amber-600 bg-amber-50", trend: "text-amber-500" },
+        { text: "text-purple-600 bg-purple-50", trend: "text-purple-500" },
+        { text: "text-rose-600 bg-rose-50", trend: "text-rose-500" },
+        { text: "text-cyan-600 bg-cyan-50", trend: "text-cyan-500" }
+    ];
+
+    const cardConfigs = dimensions.map((dimName, idx) => ({
+        title: `Avg ${dimName}`,
+        icon: icons[idx % icons.length],
+        highlightClass: highlights[idx % highlights.length].text,
+        trendColorClass: highlights[idx % highlights.length].trend
+    }));
 
     const MapComponent = config.mapComponent;
 
@@ -192,14 +196,19 @@ export default function CountryHome() {
     return (
         <main className="bg-[#F9F8FF] h-screen w-screen overflow-hidden flex flex-col relative">
             {/* Header Section */}
-            <div className="w-full pt-28 pb-2 xl:pt-32 xl:pb-4 px-6 flex flex-col items-center text-center flex-shrink-0 z-10">
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="w-full pt-28 pb-2 xl:pt-32 xl:pb-4 px-6 flex flex-col items-center text-center flex-shrink-0 z-10"
+            >
                 <h1 className="text-3xl xl:text-5xl font-black text-[#010104] tracking-tighter mb-1 xl:mb-2">
                     {config.name} Profile
                 </h1>
                 <p className="text-sm xl:text-base text-gray-500 font-medium max-w-3xl">
                     Explore data indicators across {config.regions.length} regions.
                 </p>
-            </div>
+            </motion.div>
 
             {/* Bento Grid */}
             <motion.section
@@ -240,7 +249,7 @@ export default function CountryHome() {
                                     onSelect={handleRegionSelect} 
                                     selectedRegions={selectedRegions} 
                                     regions={config.regions}
-                                    regionCodePrefix={config.regionCodePrefix}
+                                    getFlagUrl={config.getFlagUrl}
                                 />
                             </div>
                         )}
@@ -248,18 +257,20 @@ export default function CountryHome() {
                 </motion.div>
 
                 {/* Render Metric Cards */}
-                {aggregates[0] && (
+                {cardConfigs[0] && (
                     <MetricCard
-                        {...aggregates[0]}
-                        value={formatValue(aggregates[0].value)}
+                        {...cardConfigs[0]}
+                        value={aggregates[0] ? formatValue(aggregates[0].value) : '...'}
+                        trendData={aggregates[0]?.trendData}
                         loading={loading}
                     />
                 )}
 
-                {aggregates[1] && (
+                {cardConfigs[1] && (
                     <MetricCard
-                        {...aggregates[1]}
-                        value={formatValue(aggregates[1].value)}
+                        {...cardConfigs[1]}
+                        value={aggregates[1] ? formatValue(aggregates[1].value) : '...'}
+                        trendData={aggregates[1]?.trendData}
                         loading={loading}
                     />
                 )}
@@ -282,18 +293,38 @@ export default function CountryHome() {
                 </motion.div>
 
                 {/* Render More Metric Cards */}
-                {aggregates[2] && (
+                {cardConfigs[2] && (
                     <MetricCard
-                        {...aggregates[2]}
-                        value={formatValue(aggregates[2].value)}
+                        {...cardConfigs[2]}
+                        value={aggregates[2] ? formatValue(aggregates[2].value) : '...'}
+                        trendData={aggregates[2]?.trendData}
                         loading={loading}
                     />
                 )}
 
-                {aggregates[3] && (
+                {cardConfigs[3] && (
                     <MetricCard
-                        {...aggregates[3]}
-                        value={formatValue(aggregates[3].value)}
+                        {...cardConfigs[3]}
+                        value={aggregates[3] ? formatValue(aggregates[3].value) : '...'}
+                        trendData={aggregates[3]?.trendData}
+                        loading={loading}
+                    />
+                )}
+
+                {cardConfigs[4] && (
+                    <MetricCard
+                        {...cardConfigs[4]}
+                        value={aggregates[4] ? formatValue(aggregates[4].value) : '...'}
+                        trendData={aggregates[4]?.trendData}
+                        loading={loading}
+                    />
+                )}
+
+                {cardConfigs[5] && (
+                    <MetricCard
+                        {...cardConfigs[5]}
+                        value={aggregates[5] ? formatValue(aggregates[5].value) : '...'}
+                        trendData={aggregates[5]?.trendData}
                         loading={loading}
                     />
                 )}

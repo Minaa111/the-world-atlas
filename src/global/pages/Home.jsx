@@ -147,14 +147,19 @@ export default function Home() {
     return (
         <main className="bg-[#F9F8FF] h-screen w-screen overflow-hidden flex flex-col relative">
             {/* Header Section */}
-            <div className="w-full pt-28 pb-2 xl:pt-32 xl:pb-4 px-6 flex flex-col items-center text-center flex-shrink-0 z-10">
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="w-full pt-28 pb-2 xl:pt-32 xl:pb-4 px-6 flex flex-col items-center text-center flex-shrink-0 z-10"
+            >
                 <h1 className="text-3xl xl:text-5xl font-black text-[#010104] tracking-tighter mb-1 xl:mb-2">
                     The World Atlas.
                 </h1>
                 <p className="text-sm xl:text-base text-gray-500 font-medium max-w-3xl">
                     Explore comprehensive socio-economic data across {loading ? '...' : aggregates?.total_countries || 'all'} nations through our interactive 3D platform.
                 </p>
-            </div>
+            </motion.div>
 
             {/* Bento Grid */}
             <motion.section

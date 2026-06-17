@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function RegionList({ onSelect, selectedRegions = [], regions, regionCodePrefix }) {
+export default function RegionList({ onSelect, selectedRegions = [], regions, getFlagUrl }) {
     const [searchTerm, setSearchTerm] = useState("");
 
     const filtered = regions.filter(region => {
@@ -49,7 +49,7 @@ export default function RegionList({ onSelect, selectedRegions = [], regions, re
                                 }`}
                             >
                                 <img 
-                                    src={`https://flagcdn.com/w40/${regionCodePrefix}${region.iso2.toLowerCase()}.png`} 
+                                    src={getFlagUrl ? getFlagUrl(region.iso2) : `https://flagcdn.com/w40/${region.iso2.toLowerCase()}.png`} 
                                     alt="flag"
                                     className="w-8 h-auto rounded shadow-sm border border-gray-100 object-cover"
                                 />

@@ -30,7 +30,7 @@ const globalDimensionsMap = getDimensionsMap();
 
 const presetColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16'];
 
-function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors, entityKeyField = 'iso3', entityFlagPrefix, dimensionsMap }) {
+function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors, entityKeyField = 'iso3', getFlagUrl, dimensionsMap }) {
     const entityId = country[entityKeyField] || country.name;
     const {
         attributes,
@@ -110,8 +110,8 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
             <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <div className="flex items-center gap-2">
                     {country.code && (
-                        <img
-                            src={entityFlagPrefix ? `https://flagcdn.com/w20/${entityFlagPrefix}${country.code.toLowerCase()}.png` : `https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
+                        <img 
+                            src={getFlagUrl ? getFlagUrl(country.iso3 || country.code) : `https://flagcdn.com/w20/${(country.iso3 || country.code || '').toLowerCase()}.png`} 
                             alt="flag"
                             className="w-4 h-3 object-cover rounded-[2px]"
                             onError={(e) => { e.target.style.display = 'none'; }}
@@ -171,7 +171,8 @@ export default function AnalysisSidebar({
     availableYears,
     isPlaying, setIsPlaying,
     entityKeyField = 'iso3',
-    entityFlagPrefix
+    getFlagUrl,
+    onExit
 }) {
     const navigate = useNavigate();
     
@@ -208,7 +209,7 @@ export default function AnalysisSidebar({
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Command Center</p>
                 </div>
                 <button 
-                    onClick={() => navigate('/global')}
+                    onClick={() => onExit ? onExit() : navigate('/global')}
                     className="text-gray-400 hover:text-[#010104] bg-gray-50 hover:bg-gray-200 p-2 rounded-full transition-colors outline-none"
                     title="Exit Workspace"
                 >
@@ -325,7 +326,7 @@ export default function AnalysisSidebar({
                                             onToggleVisibility={toggleCountryVisibility}
                                             setCustomColors={setCustomColors}
                                             entityKeyField={entityKeyField}
-                                            entityFlagPrefix={entityFlagPrefix}
+                                            getFlagUrl={getFlagUrl}
                                             dimensionsMap={dimensionsMap}
                                         />
                                     ))}

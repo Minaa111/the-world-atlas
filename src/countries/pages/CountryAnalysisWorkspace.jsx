@@ -255,7 +255,8 @@ export default function CountryAnalysisWorkspace() {
                 setIsPlaying={setIsPlaying}
                 availableYears={availableYears}
                 entityKeyField="name" // Important for country scope vs global iso3
-                entityFlagPrefix={config.regionCodePrefix}
+                getFlagUrl={config.getFlagUrl}
+                onExit={() => navigate(`/country/${config.id}`)}
             />
 
             {/* Main Content Area */}
