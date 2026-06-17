@@ -80,8 +80,8 @@ export default function RadarView({
                             angleLines: { color: 'rgba(0,0,0,0.1)' },
                             grid: { color: 'rgba(0,0,0,0.05)' },
                             pointLabels: {
-                                padding: 24,
-                                font: { size: 12, weight: 'bold' },
+                                padding: 10,
+                                font: { size: 10, weight: 'bold' },
                                 color: function(context) {
                                     const dimName = visibleDimensions[context.index];
                                     const raw = latest[dimensionsMap[dimName].key];
