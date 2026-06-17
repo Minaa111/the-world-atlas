@@ -7,18 +7,22 @@ export default function PolarView({
     chartData,
     dimensions,
     dimensionsMap,
-    entityColors,
+    getEntityColor,
     formatValue,
     globalMaxValues,
     hiddenCountries,
-    gridCols
+    gridCols,
+    hiddenColumns,
+    playbackYear
 }) {
-    const getLatestValues = (entityId) => {
+    const visibleDimensions = dimensions.filter(dim => !hiddenColumns?.has(dim));
+
+    const getValuesForYear = (entityId) => {
         const cData = chartData[entityId] || [];
         const latest = {};
-        dimensions.forEach(dim => {
+        visibleDimensions.forEach(dim => {
             const dimInfo = dimensionsMap[dim];
-            const records = cData.filter(d => !d.is_forecast && d[dimInfo.key] !== null && d[dimInfo.key] !== undefined);
+            const records = cData.filter(d => !d.is_forecast && d[dimInfo.key] !== null && d[dimInfo.key] !== undefined && d.year <= playbackYear);
             if (records.length > 0) {
                 const sorted = [...records].sort((a, b) => b.year - a.year);
                 latest[dimInfo.key] = sorted[0][dimInfo.key];
@@ -40,24 +44,25 @@ export default function PolarView({
         <div className="flex flex-col w-full h-full p-6 z-10 relative bg-white overflow-hidden">
             <div className={`grid grid-cols-1 ${gridClassMap[gridCols]} gap-6 flex-1 overflow-y-auto min-h-0 pb-6`}>
             {entities.filter(e => !hiddenCountries?.has(e[entityKeyField])).map((entity, idx) => {
-                const latest = getLatestValues(entity[entityKeyField]);
+                const latest = getValuesForYear(entity[entityKeyField]);
 
-                const isMissing = dimensions.map(dim => {
+                const isMissing = visibleDimensions.map(dim => {
                     const raw = latest[dimensionsMap[dim].key];
                     return raw === undefined || raw === null;
                 });
 
-                const dataPoints = dimensions.map((dim, i) => {
+                const dataPoints = visibleDimensions.map((dim, i) => {
                     if (isMissing[i]) return 100;
                     const raw = latest[dimensionsMap[dim].key];
                     return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
                 });
 
-                const bgColors = dimensions.map((_, i) => isMissing[i] ? 'rgba(229, 231, 235, 0.4)' : entityColors[i % entityColors.length] + '80');
-                const bdColors = dimensions.map((_, i) => isMissing[i] ? '#9ca3af' : entityColors[i % entityColors.length]);
+                const color = getEntityColor(entity[entityKeyField], idx);
+                const bgColors = visibleDimensions.map((_, i) => isMissing[i] ? 'rgba(229, 231, 235, 0.4)' : color + '80');
+                const bdColors = visibleDimensions.map((_, i) => isMissing[i] ? '#9ca3af' : color);
 
                 const data = {
-                    labels: dimensions,
+                    labels: visibleDimensions,
                     datasets: [
                         {
                             label: entity.name,
@@ -93,7 +98,7 @@ export default function PolarView({
                         tooltip: {
                             callbacks: {
                                 label: function (context) {
-                                    const dimName = dimensions[context.dataIndex];
+                                    const dimName = visibleDimensions[context.dataIndex];
                                     const rawVal = latest[dimensionsMap[dimName].key];
                                     return (rawVal !== null && rawVal !== undefined) ? `${dimName}: ${formatValue(rawVal)}` : `${dimName}: No Data Available`;
                                 }
@@ -118,7 +123,7 @@ export default function PolarView({
                             <PolarArea data={data} options={options} />
                         </div>
                         <div className="w-full text-center mt-4 text-xs text-gray-400 font-medium bg-gray-50 py-2 rounded-lg flex flex-col gap-1">
-                            <span>* Using latest available historical data point per dimension</span>
+                            <span>* Showing latest data up to {playbackYear}</span>
                             <span>* Values are normalized relative to global theoretical maximums</span>
                         </div>
                         </div>

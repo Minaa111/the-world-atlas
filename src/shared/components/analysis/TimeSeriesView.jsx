@@ -1,6 +1,8 @@
 import React from 'react';
 import { Line } from 'react-chartjs-2';
-import IndicatorSelector from './IndicatorSelector';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function TimeSeriesView({ 
     entities, 
@@ -8,25 +10,18 @@ export default function TimeSeriesView({
     chartData, 
     dimensions,
     activeDimension,
-    toggleDimension,
     dimensionsMap, 
     showForecast, 
-    entityColors, 
+    getEntityColor, 
     formatValue,
-    hiddenCountries
+    hiddenCountries,
+    playbackYear
 }) {
     // Determine which dimensions to render based on activeDimension
     const dimensionsToRender = [activeDimension];
 
     return (
         <div className="flex flex-col w-full h-full z-10 relative bg-white">
-            <div className="flex items-center justify-between gap-3 p-6 border-b border-[#EBE9FC] shrink-0">
-                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Select Indicator</span>
-                <div className="flex-1 max-w-md">
-                    <IndicatorSelector activeDimension={activeDimension} onChange={toggleDimension} />
-                </div>
-            </div>
-
             {dimensionsToRender.map(dimName => {
                 const dimInfo = dimensionsMap[dimName];
                 const metric = dimInfo.key;
@@ -62,7 +57,7 @@ export default function TimeSeriesView({
                     if (hiddenCountries?.has(entity[entityKeyField])) return [];
 
                     const cData = chartData[entity[entityKeyField]] || [];
-                    const color = entityColors[idx % entityColors.length];
+                    const color = getEntityColor(entity[entityKeyField], idx);
 
                     // Historical Data
                     const histRecords = cData.filter(d => !d.is_forecast && d[metric] !== null && d[metric] !== undefined);

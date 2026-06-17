@@ -5,6 +5,7 @@ import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import { getDimensionsList, getDimensionsMap } from '../../shared/config/indicators';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -24,6 +25,25 @@ import Map from "../components/Map";
 import CountriesList from "../components/CountriesList";
 import Globe from "../components/Globe";
 import AnalysisSidebar from "../../shared/components/analysis/AnalysisSidebar";
+
+ChartJS.register(
+    CategoryScale, LinearScale, RadialLinearScale, PointElement, LineElement, 
+    BarElement, ArcElement, Filler, Title, Tooltip, Legend
+);
+
+// Global ChartJS Styling (Glassmorphism Tooltips & Fonts)
+ChartJS.defaults.font.family = "'Inter', sans-serif";
+ChartJS.defaults.color = '#9ca3af'; // gray-400
+ChartJS.defaults.plugins.tooltip.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+ChartJS.defaults.plugins.tooltip.titleColor = '#010104';
+ChartJS.defaults.plugins.tooltip.bodyColor = '#4b5563';
+ChartJS.defaults.plugins.tooltip.borderColor = '#EBE9FC';
+ChartJS.defaults.plugins.tooltip.borderWidth = 1;
+ChartJS.defaults.plugins.tooltip.padding = 12;
+ChartJS.defaults.plugins.tooltip.boxPadding = 6;
+ChartJS.defaults.plugins.tooltip.usePointStyle = true;
+ChartJS.defaults.plugins.tooltip.titleFont = { size: 13, weight: 'bold', family: "'Inter', sans-serif" };
+ChartJS.defaults.plugins.tooltip.bodyFont = { size: 12, weight: '600', family: "'Inter', sans-serif" };
 
 import TimeSeriesView from "../../shared/components/analysis/TimeSeriesView";
 import RadarView from "../../shared/components/analysis/RadarView";
@@ -89,19 +109,43 @@ export default function Analysis() {
     const [modalTab, setModalTab] = useState("globe");
     const [viewTab, setViewTab] = useState("time"); // 'time', 'radar', or 'scatter'
     const [activeDimension, setActiveDimension] = useState(() => localStorage.getItem('analysisActiveDimension') || "Gross National Income (GNI)");
-    const [scatterX, setScatterX] = useState(() => localStorage.getItem('analysisScatterX') || "gni_per_capita");
-    const [scatterY, setScatterY] = useState(() => localStorage.getItem('analysisScatterY') || "life_expectancy");
+    
+    // We import dimensionsMap here to validate localStorage because scatter keys must be valid labels
+    const [scatterX, setScatterX] = useState(() => {
+        const stored = localStorage.getItem('analysisScatterX');
+        const map = getDimensionsMap();
+        return (stored && map[stored]) ? stored : "GNI per capita";
+    });
+    const [scatterY, setScatterY] = useState(() => {
+        const stored = localStorage.getItem('analysisScatterY');
+        const map = getDimensionsMap();
+        return (stored && map[stored]) ? stored : "Life Expectancy";
+    });
+
     const [hiddenCountries, setHiddenCountries] = useState(new Set());
     const [showForecast, setShowForecast] = useState(false); // Predict 5 years
     const [isExporting, setIsExporting] = useState(false);
+    const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [gridCols, setGridCols] = useState(2);
     const [hiddenColumns, setHiddenColumns] = useState(new Set());
 
     const [chartData, setChartData] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
+    // Time-Lapse State
+    const [playbackYear, setPlaybackYear] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [availableYears, setAvailableYears] = useState([]);
+
     const dimensions = getDimensionsList();
-    const countryColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+    const defaultColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+    const [customColors, setCustomColors] = useState(() => JSON.parse(localStorage.getItem('analysisCustomColors')) || {});
+
+    const getEntityColor = (iso3, index) => customColors[iso3] || defaultColors[index % defaultColors.length];
+
+    useEffect(() => {
+        localStorage.setItem('analysisCustomColors', JSON.stringify(customColors));
+    }, [customColors]);
 
     useEffect(() => {
         localStorage.setItem('analysisSelectedCountries', JSON.stringify(selectedCountries));
@@ -156,6 +200,40 @@ export default function Analysis() {
         };
     }, [selectedCountries, showForecast]);
 
+    useEffect(() => {
+        if (Object.keys(chartData).length > 0) {
+            const yearsSet = new Set();
+            Object.values(chartData).forEach(cData => {
+                cData.forEach(d => {
+                    if (!d.is_forecast || showForecast) yearsSet.add(d.year);
+                });
+            });
+            const sortedYears = Array.from(yearsSet).sort((a, b) => a - b);
+            setAvailableYears(sortedYears);
+            if (sortedYears.length > 0 && (!playbackYear || !sortedYears.includes(playbackYear))) {
+                setPlaybackYear(sortedYears[sortedYears.length - 1]);
+            }
+        }
+    }, [chartData, showForecast]);
+
+    useEffect(() => {
+        let interval;
+        if (isPlaying && availableYears.length > 0) {
+            interval = setInterval(() => {
+                setPlaybackYear(prev => {
+                    const currentIndex = availableYears.indexOf(prev);
+                    if (currentIndex < availableYears.length - 1) {
+                        return availableYears[currentIndex + 1];
+                    } else {
+                        setIsPlaying(false);
+                        return prev;
+                    }
+                });
+            }, 800); // 800ms per year
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, availableYears]);
+
     const removeCountry = (name) => {
         const countryToRemove = selectedCountries.find(c => c.name === name);
         setSelectedCountries(selectedCountries.filter(c => c.name !== name));
@@ -185,6 +263,12 @@ export default function Analysis() {
         const exists = selectedCountries.find(c => c.name === countryObj.name);
         if (!exists) {
             setSelectedCountries([...selectedCountries, countryObj]);
+            if (!customColors[countryObj.iso3]) {
+                setCustomColors(prev => ({
+                    ...prev,
+                    [countryObj.iso3]: defaultColors[selectedCountries.length % defaultColors.length]
+                }));
+            }
         }
         setIsAddModalOpen(false);
     };
@@ -293,52 +377,187 @@ export default function Analysis() {
             alert(`Error generating PDF: ${error.message || error}\n\nPlease share this error message!`);
         } finally {
             setIsExporting(false);
+            setIsExportMenuOpen(false);
+        }
+    };
+
+    const handleDownloadPNG = async () => {
+        if (selectedCountries.length === 0) return;
+
+        setIsExporting(true);
+        try {
+            const element = document.getElementById("analysis-workspace-content");
+            if (!element) return;
+
+            const canvases = element.querySelectorAll('canvas');
+            const replacedImages = [];
+
+            canvases.forEach(canvas => {
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png', 1.0);
+                img.style.width = canvas.style.width;
+                img.style.height = canvas.style.height;
+                img.style.boxSizing = 'border-box';
+
+                canvas.style.display = 'none';
+                canvas.parentNode.insertBefore(img, canvas);
+                replacedImages.push({ canvas, img });
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const renderCanvas = await html2canvas(element, { scale: 3, useCORS: true, backgroundColor: "#F9F8FF" });
+            const imgData = renderCanvas.toDataURL('image/png');
+
+            const link = document.createElement("a");
+            link.download = `Inequality_Atlas_${viewTab}_Export.png`;
+            link.href = imgData;
+            link.click();
+
+            replacedImages.forEach(({ canvas, img }) => {
+                canvas.style.display = '';
+                img.parentNode.removeChild(img);
+            });
+
+        } catch (error) {
+            console.error("Error generating PNG", error);
+            alert(`Error generating PNG: ${error.message || error}`);
+        } finally {
+            setIsExporting(false);
+            setIsExportMenuOpen(false);
         }
     };
 
     const renderCanvas = () => {
         if (selectedCountries.length === 0) {
             return (
-                <div className="flex-1 h-full flex items-center justify-center">
-                    <div className="text-center z-10 flex flex-col items-center gap-4 py-32 bg-white w-full max-w-2xl rounded-3xl shadow-sm border border-[#EBE9FC]">
-                        <div className="flex items-end justify-center h-32 gap-3 opacity-30">
-                            <div className="w-10 bg-[#010104] h-12 rounded-t-sm"></div>
-                            <div className="w-10 bg-[#010104] h-24 rounded-t-sm"></div>
-                            <div className="w-10 bg-[#010104] h-16 rounded-t-sm"></div>
-                            <div className="w-10 bg-[#010104] h-28 rounded-t-sm"></div>
-                            <div className="w-10 bg-[#010104] h-20 rounded-t-sm"></div>
+                <motion.div 
+                    key="empty-state"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex-1 h-full flex items-center justify-center p-8"
+                >
+                    <div className="text-center z-10 flex flex-col items-center gap-6 py-24 px-12 bg-white/60 backdrop-blur-sm w-full max-w-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white">
+                        <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                            <LineChart size={40} className="text-indigo-400" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-2xl font-bold text-[#010104] tracking-wide">Analysis Workspace</h3>
-                        <p className="text-gray-500 font-medium">Select dimensions and entities from the sidebar to visualize insights.</p>
+                        <div>
+                            <h3 className="text-2xl font-black text-[#010104] tracking-tight mb-2">Blank Canvas</h3>
+                            <p className="text-gray-500 font-medium max-w-sm mx-auto leading-relaxed">Your workspace is ready. Select entities from the sidebar or globe to begin your analysis.</p>
+                        </div>
+                        <button 
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="mt-4 px-6 py-3 bg-[#010104] hover:bg-gray-800 text-white rounded-xl font-bold text-sm shadow-md transition-all hover:-translate-y-0.5 outline-none flex items-center gap-2"
+                        >
+                            <Plus size={16} /> Add First Entity
+                        </button>
                     </div>
-                </div>
+                </motion.div>
             );
         }
 
         if (isLoading) {
             return (
-                <div className="flex-1 h-full flex items-center justify-center">
-                    <div className="p-20 text-center font-bold text-gray-500 animate-pulse">Loading data...</div>
-                </div>
+                <motion.div 
+                    key="loading-state"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 h-full flex flex-col items-center justify-center gap-4"
+                >
+                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <div className="font-bold text-gray-500 animate-pulse tracking-wide uppercase text-sm">Processing Data...</div>
+                </motion.div>
             );
         }
 
+        const viewNames = {
+            'time': 'Time-Series Tracking',
+            'bar': 'Snapshot Comparison',
+            'radar': 'Multidimensional Assessment',
+            'polar': 'Relative Scale Assessment',
+            'scatter': 'Correlation Analysis',
+            'table': 'Raw Data Matrix'
+        };
+
         return (
-            <div className="w-full h-full bg-white rounded-3xl shadow-sm border border-[#EBE9FC] flex flex-col overflow-hidden relative">
+            <motion.div 
+                key="canvas-content"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="w-full h-full bg-white rounded-[2rem] shadow-sm border border-[#EBE9FC] flex flex-col overflow-hidden relative"
+            >
+                {/* Dynamic Canvas Header */}
+                <div className="px-8 py-5 border-b border-[#EBE9FC] flex justify-between items-center bg-white/80 backdrop-blur-md z-20 shrink-0">
+                    <h2 className="text-lg font-black text-[#010104] tracking-tight">{viewNames[viewTab]}</h2>
+                    
+                    <div className="flex items-center gap-4">
+                        {/* Time Lapse Playback Controls */}
+                        {availableYears.length > 0 && viewTab !== 'time' && (
+                            <div className="flex items-center gap-4 bg-gray-50/80 px-4 py-2 rounded-2xl border border-[#EBE9FC]">
+                                <button
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isPlaying ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'}`}
+                                >
+                                    {isPlaying ? (
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                                    ) : (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    )}
+                                </button>
+                                
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold text-gray-400">{availableYears[0]}</span>
+                                    <input 
+                                        type="range" 
+                                        min={0}
+                                        max={availableYears.length - 1}
+                                        value={availableYears.indexOf(playbackYear) !== -1 ? availableYears.indexOf(playbackYear) : 0}
+                                        onChange={(e) => {
+                                            setIsPlaying(false);
+                                            setPlaybackYear(availableYears[parseInt(e.target.value)]);
+                                        }}
+                                        className="w-48 accent-indigo-600"
+                                    />
+                                    <span className="text-xs font-bold text-gray-400">{availableYears[availableYears.length - 1]}</span>
+                                </div>
+                                
+                                <div className="px-3 py-1 bg-white rounded-lg shadow-sm border border-[#EBE9FC] min-w-[60px] text-center">
+                                    <span className="font-black text-indigo-600 tracking-wider">{playbackYear}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex-1 relative min-h-0 bg-gray-50/30">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={viewTab}
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            transition={{ duration: 0.2 }}
+                            className="w-full h-full absolute inset-0"
+                        >
                 {viewTab === "time" && (
-                    <TimeSeriesView
-                        entities={selectedCountries}
-                        entityKeyField="iso3"
-                        chartData={chartData}
-                        dimensions={dimensions}
-                        activeDimension={activeDimension}
-                        toggleDimension={toggleDimension}
-                        dimensionsMap={dimensionsMap}
-                        showForecast={showForecast}
-                        entityColors={countryColors}
-                        formatValue={formatValue}
-                        hiddenCountries={hiddenCountries}
-                    />
+                        <TimeSeriesView
+                            entities={selectedCountries}
+                            entityKeyField="iso3"
+                            chartData={chartData}
+                            dimensions={dimensions}
+                            activeDimension={activeDimension}
+                            dimensionsMap={dimensionsMap}
+                            showForecast={showForecast}
+                            getEntityColor={getEntityColor}
+                            customColors={customColors}
+                            formatValue={formatValue}
+                            hiddenCountries={hiddenCountries}
+                            playbackYear={playbackYear}
+                        />
                 )}
                 {viewTab === "bar" && (
                     <BarView
@@ -349,9 +568,10 @@ export default function Analysis() {
                         dimensionsMap={dimensionsMap}
                         activeDimension={activeDimension}
                         toggleDimension={toggleDimension}
-                        entityColors={countryColors}
+                        getEntityColor={getEntityColor}
                         formatValue={formatValue}
                         hiddenCountries={hiddenCountries}
+                        playbackYear={playbackYear}
                     />
                 )}
                 {viewTab === "radar" && (
@@ -361,11 +581,13 @@ export default function Analysis() {
                             chartData={chartData}
                             dimensions={dimensions}
                             dimensionsMap={dimensionsMap}
-                            entityColors={countryColors}
+                            getEntityColor={getEntityColor}
                             formatValue={formatValue}
                             globalMaxValues={globalMaxValues}
                             hiddenCountries={hiddenCountries}
                             gridCols={gridCols}
+                            hiddenColumns={hiddenColumns}
+                            playbackYear={playbackYear}
                         />
                 )}
                 {viewTab === "polar" && (
@@ -375,11 +597,13 @@ export default function Analysis() {
                             chartData={chartData}
                             dimensions={dimensions}
                             dimensionsMap={dimensionsMap}
-                            entityColors={countryColors}
+                            getEntityColor={getEntityColor}
                             formatValue={formatValue}
                             globalMaxValues={globalMaxValues}
                             hiddenCountries={hiddenCountries}
                             gridCols={gridCols}
+                            hiddenColumns={hiddenColumns}
+                            playbackYear={playbackYear}
                         />
                 )}
                 {viewTab === "scatter" && (
@@ -393,9 +617,10 @@ export default function Analysis() {
                         setScatterX={setScatterX}
                         scatterY={scatterY}
                         setScatterY={setScatterY}
-                        entityColors={countryColors}
+                        getEntityColor={getEntityColor}
                         formatValue={formatValue}
                         hiddenCountries={hiddenCountries}
+                        playbackYear={playbackYear}
                     />
                 )}
                 {viewTab === "table" && (
@@ -408,9 +633,13 @@ export default function Analysis() {
                             formatValue={formatValue}
                             hiddenCountries={hiddenCountries}
                             hiddenColumns={hiddenColumns}
+                            playbackYear={playbackYear}
                         />
                 )}
-            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </motion.div>
         );
     };
 
@@ -428,10 +657,17 @@ export default function Analysis() {
                 setShowForecast={setShowForecast}
                 handleDownloadCSV={handleDownloadCSV} 
                 handleDownloadPDF={handleDownloadPDF} 
+                handleDownloadPNG={handleDownloadPNG}
                 isExporting={isExporting}
-                countryColors={countryColors} 
+                getEntityColor={getEntityColor} 
+                setCustomColors={setCustomColors}
                 chartData={chartData} 
                 activeDimension={activeDimension} 
+                setActiveDimension={setActiveDimension}
+                scatterX={scatterX}
+                setScatterX={setScatterX}
+                scatterY={scatterY}
+                setScatterY={setScatterY}
                 formatValue={formatValue}
                 hiddenCountries={hiddenCountries}
                 toggleCountryVisibility={toggleCountryVisibility}
@@ -445,7 +681,9 @@ export default function Analysis() {
             {/* Main Stage (Canvas) */}
             <div className="flex-1 h-full flex flex-col relative overflow-hidden bg-[#F9F8FF]">
                 <div id="analysis-workspace-content" className="flex-1 w-full h-full relative p-6 flex flex-col">
-                    {renderCanvas()}
+                    <AnimatePresence mode="wait">
+                        {renderCanvas()}
+                    </AnimatePresence>
                 </div>
             </div>
 

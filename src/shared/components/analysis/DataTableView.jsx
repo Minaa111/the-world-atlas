@@ -8,14 +8,15 @@ export default function DataTableView({
     dimensionsMap,
     formatValue,
     hiddenCountries,
-    hiddenColumns
+    hiddenColumns,
+    playbackYear
 }) {
     const getLatestValues = (entityId) => {
         const cData = chartData[entityId] || [];
         const latest = {};
         dimensions.forEach(dim => {
             const dimInfo = dimensionsMap[dim];
-            const records = cData.filter(d => !d.is_forecast && d[dimInfo.key] !== null && d[dimInfo.key] !== undefined);
+            const records = cData.filter(d => !d.is_forecast && d[dimInfo.key] !== null && d[dimInfo.key] !== undefined && d.year <= playbackYear);
             if (records.length > 0) {
                 const sorted = [...records].sort((a, b) => b.year - a.year);
                 latest[dimInfo.key] = sorted[0][dimInfo.key];

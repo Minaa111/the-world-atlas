@@ -1,6 +1,5 @@
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
-import IndicatorSelector from './IndicatorSelector';
 
 export default function BarView({
     entities,
@@ -10,16 +9,17 @@ export default function BarView({
     dimensionsMap,
     activeDimension,
     toggleDimension,
-    entityColors,
+    getEntityColor,
     formatValue,
-    hiddenCountries
+    hiddenCountries,
+    playbackYear
 }) {
-    const getLatestValues = (entityId) => {
+    const getValuesForYear = (entityId) => {
         const cData = chartData[entityId] || [];
         const latest = {};
         dimensions.forEach(dim => {
             const dimInfo = dimensionsMap[dim];
-            const records = cData.filter(d => !d.is_forecast && d[dimInfo.key] !== null && d[dimInfo.key] !== undefined);
+            const records = cData.filter(d => !d.is_forecast && d[dimInfo.key] !== null && d[dimInfo.key] !== undefined && d.year <= playbackYear);
             if (records.length > 0) {
                 const sorted = [...records].sort((a, b) => b.year - a.year);
                 latest[dimInfo.key] = sorted[0][dimInfo.key];
@@ -32,12 +32,6 @@ export default function BarView({
 
     return (
         <div className="flex flex-col w-full h-full z-10 relative bg-white">
-            <div className="flex items-center justify-between gap-3 p-6 border-b border-[#EBE9FC] shrink-0">
-                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Select Indicator</span>
-                <div className="flex-1 max-w-md">
-                    <IndicatorSelector activeDimension={activeDimension} onChange={toggleDimension} />
-                </div>
-            </div>
 
             {[activeDimension].map(dimName => {
                 const dimInfo = dimensionsMap[dimName];
@@ -51,10 +45,10 @@ export default function BarView({
                 entities.forEach((entity, idx) => {
                     if (hiddenCountries?.has(entity[entityKeyField])) return;
 
-                    const latest = getLatestValues(entity[entityKeyField]);
+                    const latest = getValuesForYear(entity[entityKeyField]);
                     labels.push(entity.name);
                     dataPoints.push(latest[metric]);
-                    const color = entityColors[idx % entityColors.length];
+                    const color = getEntityColor(entity[entityKeyField], idx);
                     backgroundColors.push(color + '80'); // 50% opacity
                     borderColors.push(color);
                 });
@@ -101,6 +95,9 @@ export default function BarView({
                         <h3 className="text-xl font-bold mb-4 text-[#010104] shrink-0">{dimInfo.label}</h3>
                         <div className="flex-1 relative w-full min-h-0">
                             <Bar data={data} options={options} />
+                        </div>
+                        <div className="w-full text-center mt-4 text-xs text-gray-400 font-medium bg-gray-50 py-2 rounded-lg flex flex-col gap-1">
+                            <span>* Showing latest data up to {playbackYear}</span>
                         </div>
                     </div>
                 );

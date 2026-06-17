@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
     LineChart, BarChart2, Hexagon, PieChart, Table, 
     Sparkles, Download, Plus, GripVertical, X, Eye, EyeOff,
-    Maximize, Columns2, Columns3, Columns4, CheckSquare, Square
+    Maximize, Columns2, Columns3, Columns4, CheckSquare, Square,
+    ChevronDown, ChevronRight
 } from 'lucide-react';
+import IndicatorSelector from './IndicatorSelector';
 import { useNavigate } from "react-router-dom";
+import { Listbox, Transition } from '@headlessui/react';
 import {
   DndContext,
   closestCenter,
@@ -25,7 +28,9 @@ import { getDimensionsMap } from '../../config/indicators';
 
 const dimensionsMap = getDimensionsMap();
 
-function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility }) {
+const presetColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16'];
+
+function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors }) {
     const {
         attributes,
         listeners,
@@ -33,6 +38,8 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
         transform,
         transition,
     } = useSortable({ id: country.name });
+
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -70,7 +77,34 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
                 <GripVertical size={16} />
             </div>
             
-            <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: color }}></div>
+            
+            <div className="relative">
+                <button 
+                    onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                    className="w-3 h-3 rounded-full shadow-sm shrink-0 cursor-pointer hover:scale-125 transition-transform outline-none" 
+                    style={{ backgroundColor: color }}
+                    title="Change color"
+                ></button>
+                {isColorPickerOpen && (
+                    <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-xl shadow-xl border border-[#EBE9FC] z-50 flex flex-wrap gap-1 w-[120px]">
+                        <div className="w-full flex justify-between items-center mb-1 pb-1 border-b border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Color</span>
+                            <button onClick={() => setIsColorPickerOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={12} /></button>
+                        </div>
+                        {presetColors.map(c => (
+                            <button
+                                key={c}
+                                onClick={() => {
+                                    setCustomColors(prev => ({ ...prev, [country.iso3]: c }));
+                                    setIsColorPickerOpen(false);
+                                }}
+                                className={`w-5 h-5 rounded-full hover:scale-110 transition-transform ${c === color ? 'ring-2 ring-offset-1 ring-indigo-500' : ''}`}
+                                style={{ backgroundColor: c }}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
             
             <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <div className="flex items-center gap-2">
@@ -122,13 +156,20 @@ export default function AnalysisSidebar({
     removeCountry,
     showForecast, setShowForecast,
     handleDownloadCSV, handleDownloadPDF, isExporting,
-    countryColors, chartData, activeDimension, formatValue,
+    getEntityColor, setCustomColors, chartData, activeDimension, setActiveDimension, formatValue,
     hiddenCountries, toggleCountryVisibility,
     gridCols, setGridCols,
     hiddenColumns, setHiddenColumns,
-    dimensions
+    dimensions,
+    scatterX, setScatterX,
+    scatterY, setScatterY,
+    handleDownloadPNG
 }) {
     const navigate = useNavigate();
+    
+    const [isViewModeOpen, setIsViewModeOpen] = useState(true);
+    const [isEntitiesOpen, setIsEntitiesOpen] = useState(true);
+    const [isControlsOpen, setIsControlsOpen] = useState(true);
     
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -166,83 +207,168 @@ export default function AnalysisSidebar({
             </div>
 
             {/* View Switcher */}
-            <div className="p-6 border-b border-[#EBE9FC] shrink-0">
-                <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">View Mode</span>
-                <div className="flex flex-col gap-1">
-                    {[
-                        { id: 'time', label: 'Time Series', icon: LineChart },
-                        { id: 'bar', label: 'Bar Chart', icon: BarChart2 },
-                        { id: 'radar', label: 'Radar View', icon: Hexagon },
-                        { id: 'polar', label: 'Polar Area', icon: PieChart },
-                        { id: 'scatter', label: 'Correlation', icon: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="16" r="2" /><circle cx="12" cy="11" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="16" cy="18" r="2" /><circle cx="7" cy="8" r="2" /></svg> },
-                        { id: 'table', label: 'Data Table', icon: Table }
-                    ].map(view => {
-                        const Icon = view.icon;
-                        const isActive = viewTab === view.id;
-                        return (
-                            <button
-                                key={view.id}
-                                onClick={() => setViewTab(view.id)}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all outline-none ${
-                                    isActive 
-                                    ? 'bg-indigo-50 text-indigo-700' 
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-[#010104]'
-                                }`}
-                            >
-                                <Icon size={18} className={isActive ? 'text-indigo-600' : 'text-gray-400'} />
-                                {view.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Roster */}
-            <div className="flex-1 flex flex-col p-6 min-h-0">
-                <div className="flex justify-between items-center mb-3 shrink-0">
-                    <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Entities ({selectedCountries.length})</span>
-                    <button 
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 outline-none"
-                    >
-                        <Plus size={14} /> Add
-                    </button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto -mx-2 px-2">
-                    <DndContext 
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext 
-                            items={selectedCountries.map(c => c.name)}
-                            strategy={verticalListSortingStrategy}
+            <div className="p-4 border-b border-[#EBE9FC] shrink-0 bg-[#F9F8FF]/30 z-50">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">View Mode</span>
+                <Listbox value={viewTab} onChange={setViewTab}>
+                    <div className="relative">
+                        <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white border border-[#EBE9FC] hover:border-indigo-300 py-2.5 pl-4 pr-10 text-left shadow-sm focus:outline-none transition-colors">
+                            <span className="block truncate text-sm font-bold text-[#010104]">
+                                {[
+                                    { id: 'time', label: 'Time Series' },
+                                    { id: 'bar', label: 'Bar Chart' },
+                                    { id: 'radar', label: 'Radar View' },
+                                    { id: 'polar', label: 'Polar Area' },
+                                    { id: 'scatter', label: 'Correlation' },
+                                    { id: 'table', label: 'Data Table' }
+                                ].find(v => v.id === viewTab)?.label}
+                            </span>
+                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden="true" />
+                            </span>
+                        </Listbox.Button>
+                        <Transition
+                            as={React.Fragment}
+                            leave="transition ease-in duration-100"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
                         >
-                            <div className="flex flex-col gap-1">
-                                {selectedCountries.map((country, idx) => (
-                                    <SortableCountryItem 
-                                        key={country.name} 
-                                        country={country} 
-                                        color={countryColors[idx % countryColors.length]}
-                                        onRemove={removeCountry}
-                                        chartData={chartData}
-                                        activeDimension={activeDimension}
-                                        formatValue={formatValue}
-                                        isHidden={hiddenCountries?.has(country.iso3)}
-                                        onToggleVisibility={toggleCountryVisibility}
-                                    />
-                                ))}
-                            </div>
-                        </SortableContext>
-                    </DndContext>
-                </div>
+                            <Listbox.Options className="absolute z-[100] mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black/5 focus:outline-none sm:text-sm border border-[#EBE9FC]">
+                                {[
+                                    { id: 'time', label: 'Time Series', icon: LineChart },
+                                    { id: 'bar', label: 'Bar Chart', icon: BarChart2 },
+                                    { id: 'radar', label: 'Radar View', icon: Hexagon },
+                                    { id: 'polar', label: 'Polar Area', icon: PieChart },
+                                    { id: 'scatter', label: 'Correlation', icon: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="16" r="2" /><circle cx="12" cy="11" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="16" cy="18" r="2" /><circle cx="7" cy="8" r="2" /></svg> },
+                                    { id: 'table', label: 'Data Table', icon: Table }
+                                ].map((view) => {
+                                    const Icon = view.icon;
+                                    return (
+                                        <Listbox.Option
+                                            key={view.id}
+                                            className={({ active }) =>
+                                                `relative cursor-default select-none py-2.5 pl-4 pr-4 ${
+                                                    active ? 'bg-indigo-50 text-indigo-900' : 'text-gray-900'
+                                                }`
+                                            }
+                                            value={view.id}
+                                        >
+                                            {({ selected }) => (
+                                                <div className="flex items-center gap-3">
+                                                    <Icon size={16} className={selected ? 'text-indigo-600' : 'text-gray-400'} />
+                                                    <span className={`block truncate ${selected ? 'font-black text-indigo-600' : 'font-medium'}`}>
+                                                        {view.label}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </Listbox.Option>
+                                    );
+                                })}
+                            </Listbox.Options>
+                        </Transition>
+                    </div>
+                </Listbox>
             </div>
 
-            {/* Actions & Settings */}
-            <div className="p-6 border-t border-[#EBE9FC] bg-gray-50/50 shrink-0">
-                <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Controls</span>
-                <div className="flex flex-col gap-3">
+            <div className="flex-1 overflow-y-auto flex flex-col min-h-0 bg-[#F9F8FF]/30">
+                {/* Roster */}
+                <div className="flex flex-col border-b border-[#EBE9FC]">
+                    <button 
+                        onClick={() => setIsEntitiesOpen(!isEntitiesOpen)}
+                    className="w-full flex items-center justify-between p-4 outline-none hover:bg-gray-50 transition-colors shrink-0"
+                >
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Entities ({selectedCountries.length})</span>
+                    <div className="flex items-center gap-3">
+                        <span 
+                            onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+                        >
+                            <Plus size={14} /> Add
+                        </span>
+                        {isEntitiesOpen ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+                    </div>
+                </button>
+                
+                {isEntitiesOpen && (
+                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                        <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext 
+                                items={selectedCountries.map(c => c.name)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="flex flex-col gap-1 -mx-2 px-2">
+                                    {selectedCountries.map((country, idx) => (
+                                        <SortableCountryItem 
+                                            key={country.name} 
+                                            country={country} 
+                                            color={getEntityColor(country.iso3, idx)}
+                                            onRemove={removeCountry}
+                                            chartData={chartData}
+                                            activeDimension={activeDimension}
+                                            formatValue={formatValue}
+                                            isHidden={hiddenCountries?.has(country.iso3)}
+                                            onToggleVisibility={toggleCountryVisibility}
+                                            setCustomColors={setCustomColors}
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+                )}
+            </div>
+            </div>
+
+            {/* Actions & Settings (Pinned to bottom) */}
+            <div className="bg-gray-50 border-t border-[#EBE9FC] shrink-0 z-50">
+                <button 
+                    onClick={() => setIsControlsOpen(!isControlsOpen)}
+                    className="w-full flex items-center justify-between p-4 outline-none hover:bg-gray-100 transition-colors"
+                >
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Controls</span>
+                    {isControlsOpen ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+                </button>
+                
+                {isControlsOpen && (
+                    <div className="flex flex-col gap-4 px-4 pb-6">
+                        {(viewTab === 'time' || viewTab === 'bar') && (
+                            <div className="flex flex-col gap-2 p-3 bg-white border border-[#EBE9FC] rounded-xl shadow-sm">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Indicator</span>
+                                <IndicatorSelector 
+                                    activeDimension={activeDimension} 
+                                    onChange={setActiveDimension} 
+                                    dimensionsMap={dimensionsMap}
+                                    dimensions={dimensions} 
+                                />
+                            </div>
+                        )}
+
+                        {viewTab === 'scatter' && (
+                            <div className="flex flex-col gap-3 p-3 bg-white border border-[#EBE9FC] rounded-xl shadow-sm">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Correlation Axes</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Y-Axis</span>
+                                    <IndicatorSelector 
+                                        activeDimension={scatterY} 
+                                        onChange={setScatterY} 
+                                        dimensionsMap={dimensionsMap}
+                                        dimensions={dimensions} 
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">X-Axis</span>
+                                    <IndicatorSelector 
+                                        activeDimension={scatterX} 
+                                        onChange={setScatterX} 
+                                        dimensionsMap={dimensionsMap}
+                                        dimensions={dimensions} 
+                                    />
+                                </div>
+                            </div>
+                        )}
                     {viewTab === 'time' && (
                         <button
                             onClick={() => setShowForecast(!showForecast)}
@@ -287,9 +413,9 @@ export default function AnalysisSidebar({
                         </div>
                     )}
 
-                    {viewTab === 'table' && dimensions && (
+                    {(viewTab === 'table' || viewTab === 'radar' || viewTab === 'polar') && dimensions && (
                         <div className="flex flex-col gap-2 p-3 bg-white border border-[#EBE9FC] rounded-xl shadow-sm">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Visible Columns</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Visible Indicators</span>
                             <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1">
                                 {dimensions.map(dim => {
                                     const isHidden = hiddenColumns.has(dim);
@@ -319,25 +445,50 @@ export default function AnalysisSidebar({
                         </div>
                     )}
 
-                    <div className="w-full mt-2 pt-4 border-t border-gray-200">
-                        {viewTab === 'table' ? (
-                            <button
-                                onClick={handleDownloadCSV}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white border border-[#EBE9FC] hover:border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-bold text-[#010104] shadow-sm transition-all outline-none"
+                        </div>
+                    )}
+                </div>
+            
+            {/* Export Bottom Section */}
+            <div className="p-4 border-t border-[#EBE9FC] bg-white shrink-0">
+                <div className="relative">
+                    <Listbox>
+                        <div className="relative">
+                            <Listbox.Button disabled={isExporting || selectedCountries.length === 0} className="relative w-full flex items-center justify-center gap-2 cursor-default rounded-xl bg-[#010104] hover:bg-gray-800 text-white py-3 px-4 shadow-sm focus:outline-none transition-colors disabled:opacity-50">
+                                <Download size={16} /> 
+                                <span className="block truncate text-sm font-bold">
+                                    {isExporting ? 'Exporting...' : 'Export View'}
+                                </span>
+                            </Listbox.Button>
+                            <Transition
+                                as={React.Fragment}
+                                leave="transition ease-in duration-100"
+                                leaveFrom="opacity-100"
+                                leaveTo="opacity-0"
                             >
-                                <Download size={16} className="text-gray-400" /> Download CSV
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleDownloadPDF}
-                                disabled={isExporting}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white border border-[#EBE9FC] hover:border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-bold text-[#010104] shadow-sm transition-all disabled:opacity-50 outline-none"
-                            >
-                                <Download size={16} className="text-gray-400" /> 
-                                {isExporting ? 'Exporting...' : 'Export PDF Report'}
-                            </button>
-                        )}
-                    </div>
+                                <Listbox.Options className="absolute bottom-full mb-2 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black/5 focus:outline-none sm:text-sm border border-[#EBE9FC] z-50">
+                                    <Listbox.Option value="png" className="relative cursor-default select-none py-3 pl-4 pr-4 hover:bg-gray-50 border-b border-gray-100" onClick={handleDownloadPNG}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center">📷</div> 
+                                            <span className="font-bold text-gray-900">High-Res PNG</span>
+                                        </div>
+                                    </Listbox.Option>
+                                    <Listbox.Option value="pdf" className="relative cursor-default select-none py-3 pl-4 pr-4 hover:bg-gray-50 border-b border-gray-100" onClick={handleDownloadPDF}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded bg-red-50 text-red-600 flex items-center justify-center">📄</div> 
+                                            <span className="font-bold text-gray-900">PDF Document</span>
+                                        </div>
+                                    </Listbox.Option>
+                                    <Listbox.Option value="csv" className="relative cursor-default select-none py-3 pl-4 pr-4 hover:bg-gray-50" onClick={handleDownloadCSV}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded bg-green-50 text-green-600 flex items-center justify-center">📊</div> 
+                                            <span className="font-bold text-gray-900">CSV Data</span>
+                                        </div>
+                                    </Listbox.Option>
+                                </Listbox.Options>
+                            </Transition>
+                        </div>
+                    </Listbox>
                 </div>
             </div>
         </div>
