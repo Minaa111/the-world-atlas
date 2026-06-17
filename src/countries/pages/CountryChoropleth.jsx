@@ -1,45 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import * as d3 from 'd3';
-import USMap from '../components/USMap';
-import { usDimensionsMap, usDimensions, getMockUSData } from '../data/usMockData';
+import { countryRegistry } from '../config/countryRegistry';
 
-// Generate a list of state names for mock data
-const STATES = [
-    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", 
-    "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", 
-    "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", 
-    "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", 
-    "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
-];
-
-export default function USAChoropleth() {
+export default function CountryChoropleth() {
+    const { countryId } = useParams();
     const navigate = useNavigate();
-    const [dimension, setDimension] = useState(usDimensions[0]);
+    const config = countryRegistry[countryId];
+
+    const [dimension, setDimension] = useState('');
     const [year, setYear] = useState(2023);
     const [yearInput, setYearInput] = useState('2023');
-    const [stateData, setStateData] = useState({});
+    const [regionData, setRegionData] = useState({});
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        if (!config) {
+            navigate('/country/usa');
+        } else {
+            setDimension(config.dimensions[0]);
+        }
+    }, [config, navigate]);
+
+    useEffect(() => {
+        if (!config) return;
+
         setLoading(true);
         // Simulate network request for mock data
         setTimeout(() => {
-            const mock = getMockUSData(STATES);
+            const regionNames = config.regions.map(r => r.name);
+            const mock = config.mockDataFn(regionNames);
             const dataForYear = {};
-            Object.keys(mock).forEach(state => {
-                const stateRecords = mock[state];
+            Object.keys(mock).forEach(region => {
+                const regionRecords = mock[region];
                 // Find the record for the selected year
-                const record = stateRecords.find(r => r.year === year && !r.is_forecast);
+                const record = regionRecords.find(r => r.year === year && !r.is_forecast);
                 if (record) {
-                    dataForYear[state] = record;
+                    dataForYear[region] = record;
                 }
             });
-            setStateData(dataForYear);
+            setRegionData(dataForYear);
             setLoading(false);
         }, 300);
-    }, [year]);
+    }, [year, config]);
+
+    if (!config || !dimension) return null;
+
+    const MapComponent = config.mapComponent;
 
     const handleYearChange = (e) => {
         const val = parseInt(e.target.value);
@@ -56,10 +64,10 @@ export default function USAChoropleth() {
     };
 
     // Calculate choropleth mappings
-    const activeDimObj = usDimensionsMap[dimension];
+    const activeDimObj = config.dimensionsMap[dimension];
     
-    const validValues = Object.keys(stateData)
-        .map(state => stateData[state][activeDimObj.key])
+    const validValues = Object.keys(regionData)
+        .map(region => regionData[region][activeDimObj.key])
         .filter(v => v !== null && v !== undefined);
 
     const minVal = validValues.length ? Math.min(...validValues) : 0;
@@ -69,10 +77,10 @@ export default function USAChoropleth() {
     const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([minVal, maxVal]);
 
     const choroplethMapData = {};
-    Object.keys(stateData).forEach(state => {
-        const val = stateData[state][activeDimObj.key];
+    Object.keys(regionData).forEach(region => {
+        const val = regionData[region][activeDimObj.key];
         if (val !== null && val !== undefined) {
-            choroplethMapData[state] = {
+            choroplethMapData[region] = {
                 value: val,
                 color: colorScale(val),
                 unit: activeDimObj.unit || ''
@@ -85,7 +93,7 @@ export default function USAChoropleth() {
             {/* Header */}
             <div className="w-full z-10 p-6 flex items-center justify-between pointer-events-none">
                 <button 
-                    onClick={() => navigate('/country/usa')}
+                    onClick={() => navigate(`/country/${countryId}`)}
                     className="flex items-center gap-2 bg-white text-[#010104] hover:bg-gray-50 px-5 py-3 rounded-full font-bold text-sm shadow-md transition-all pointer-events-auto border border-[#EBE9FC]"
                 >
                     <ArrowLeft size={18} />
@@ -97,11 +105,11 @@ export default function USAChoropleth() {
 
             {/* Main Map Area */}
             <div className="flex-1 w-[90%] max-w-[1400px] mx-auto relative z-0 min-h-0 flex justify-center items-center">
-                <USMap 
+                <MapComponent 
                     choroplethData={choroplethMapData} 
                     choroplethDimension={dimension} 
-                    onStateSelect={(stateObj) => {
-                        navigate('/country/usa/analysis', { state: { initialState: stateObj } });
+                    onStateSelect={(regionObj) => {
+                        navigate(`/country/${countryId}/analysis`, { state: { initialRegion: regionObj } });
                     }}
                 />
             </div>
@@ -111,7 +119,7 @@ export default function USAChoropleth() {
                 
                 {/* Dimensions Bar */}
                 <div className="flex justify-center flex-wrap gap-2 pointer-events-auto">
-                    {usDimensions.map(dim => {
+                    {config.dimensions.map(dim => {
                         const isActive = dimension === dim;
                         return (
                             <button
@@ -172,8 +180,8 @@ export default function USAChoropleth() {
                             background: `linear-gradient(to right, ${d3.interpolateBlues(0)}, ${d3.interpolateBlues(1)})`
                         }}></div>
                         <div className="flex justify-between text-xs font-bold">
-                            <span>{Number(minVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeDimObj.unit}</span>
-                            <span>{Number(maxVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeDimObj.unit}</span>
+                            <span>{Number(minVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeDimObj.unit || ''}</span>
+                            <span>{Number(maxVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeDimObj.unit || ''}</span>
                         </div>
                     </div>
                 </div>

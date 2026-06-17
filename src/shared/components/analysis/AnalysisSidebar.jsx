@@ -26,11 +26,12 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { getDimensionsMap } from '../../config/indicators';
 
-const dimensionsMap = getDimensionsMap();
+const globalDimensionsMap = getDimensionsMap();
 
 const presetColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16'];
 
-function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors }) {
+function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors, entityKeyField = 'iso3', entityFlagPrefix, dimensionsMap }) {
+    const entityId = country[entityKeyField] || country.name;
     const {
         attributes,
         listeners,
@@ -47,7 +48,7 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
     };
 
     // Calculate Delta
-    const cData = chartData[country.iso3] || [];
+    const cData = chartData[entityId] || [];
     const dimInfo = dimensionsMap[activeDimension];
     const metric = dimInfo ? dimInfo.key : null;
     
@@ -95,7 +96,7 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
                             <button
                                 key={c}
                                 onClick={() => {
-                                    setCustomColors(prev => ({ ...prev, [country.iso3]: c }));
+                                    setCustomColors(prev => ({ ...prev, [entityId]: c }));
                                     setIsColorPickerOpen(false);
                                 }}
                                 className={`w-5 h-5 rounded-full hover:scale-110 transition-transform ${c === color ? 'ring-2 ring-offset-1 ring-indigo-500' : ''}`}
@@ -110,9 +111,10 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
                 <div className="flex items-center gap-2">
                     {country.code && (
                         <img
-                            src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
+                            src={entityFlagPrefix ? `https://flagcdn.com/w20/${entityFlagPrefix}${country.code.toLowerCase()}.png` : `https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
                             alt="flag"
                             className="w-4 h-3 object-cover rounded-[2px]"
+                            onError={(e) => { e.target.style.display = 'none'; }}
                         />
                     )}
                     <span className={`font-bold text-sm text-[#010104] truncate ${isHidden ? 'line-through' : ''}`}>{country.name}</span>
@@ -131,7 +133,7 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
 
             <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                    onClick={() => onToggleVisibility(country.iso3)}
+                    onClick={() => onToggleVisibility(entityId)}
                     className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors outline-none"
                     title={isHidden ? "Show in charts" : "Hide from charts"}
                 >
@@ -161,18 +163,23 @@ export default function AnalysisSidebar({
     gridCols, setGridCols,
     hiddenColumns, setHiddenColumns,
     dimensions,
+    dimensionsMap: propDimensionsMap,
     scatterX, setScatterX,
     scatterY, setScatterY,
     handleDownloadPNG,
     playbackYear, setPlaybackYear,
     availableYears,
-    isPlaying, setIsPlaying
+    isPlaying, setIsPlaying,
+    entityKeyField = 'iso3',
+    entityFlagPrefix
 }) {
     const navigate = useNavigate();
     
     const [isViewModeOpen, setIsViewModeOpen] = useState(true);
     const [isEntitiesOpen, setIsEntitiesOpen] = useState(true);
     const [isControlsOpen, setIsControlsOpen] = useState(true);
+
+    const dimensionsMap = propDimensionsMap || globalDimensionsMap;
     
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -309,14 +316,17 @@ export default function AnalysisSidebar({
                                         <SortableCountryItem 
                                             key={country.name} 
                                             country={country} 
-                                            color={getEntityColor(country.iso3, idx)}
+                                            color={getEntityColor(country[entityKeyField] || country.name, idx)}
                                             onRemove={removeCountry}
                                             chartData={chartData}
                                             activeDimension={activeDimension}
                                             formatValue={formatValue}
-                                            isHidden={hiddenCountries?.has(country.iso3)}
+                                            isHidden={hiddenCountries?.has(country[entityKeyField] || country.name)}
                                             onToggleVisibility={toggleCountryVisibility}
                                             setCustomColors={setCustomColors}
+                                            entityKeyField={entityKeyField}
+                                            entityFlagPrefix={entityFlagPrefix}
+                                            dimensionsMap={dimensionsMap}
                                         />
                                     ))}
                                 </div>

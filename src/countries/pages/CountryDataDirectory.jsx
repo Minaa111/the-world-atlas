@@ -1,40 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, Loader2, Layout, Info, Pin, Map } from 'lucide-react';
 import * as d3 from 'd3';
-import { usDimensionsMap, usDimensions, getMockUSData } from '../data/usMockData';
+import { countryRegistry } from '../config/countryRegistry';
 
-const STATES = [
-    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", 
-    "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", 
-    "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", 
-    "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", 
-    "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
-];
+function CountryDataDirectory() {
+  const { countryId } = useParams();
+  const navigate = useNavigate();
+  const config = countryRegistry[countryId];
 
-function USADataDirectory() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: 'stateName', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   
   const [visibleColumns, setVisibleColumns] = useState(() => {
-    const saved = localStorage.getItem('usDirectoryVisibleColumns');
+    const saved = localStorage.getItem(`${countryId}DirectoryVisibleColumns`);
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        return usDimensions;
+        return config ? config.dimensions : [];
       }
     }
-    return usDimensions;
+    return config ? config.dimensions : [];
   });
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [heatmapMode, setHeatmapMode] = useState(false);
   const [pinnedStates, setPinnedStates] = useState(new Set());
-  
-  useEffect(() => {
-    localStorage.setItem('usDirectoryVisibleColumns', JSON.stringify(visibleColumns));
-  }, [visibleColumns]);
   const [toast, setToast] = useState(null);
   
   const columnMenuRef = useRef(null);
@@ -48,6 +41,32 @@ function USADataDirectory() {
   const [scrollTop, setScrollTop] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Year state
+  const [year, setYear] = useState(() => {
+      const saved = localStorage.getItem(`${countryId}DirectoryYear`);
+      return saved ? parseInt(saved, 10) : 2020;
+  });
+  const [yearInput, setYearInput] = useState(() => {
+      const saved = localStorage.getItem(`${countryId}DirectoryYear`);
+      return saved ? saved : '2020';
+  });
+
+  useEffect(() => {
+      if (!config) navigate('/country/usa');
+  }, [config, navigate]);
+
+  useEffect(() => {
+    if (config) {
+        localStorage.setItem(`${countryId}DirectoryVisibleColumns`, JSON.stringify(visibleColumns));
+    }
+  }, [visibleColumns, countryId, config]);
+
+  useEffect(() => {
+      if (config) {
+          localStorage.setItem(`${countryId}DirectoryYear`, year.toString());
+      }
+  }, [year, countryId, config]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (columnMenuRef.current && !columnMenuRef.current.contains(event.target)) {
@@ -57,28 +76,17 @@ function USADataDirectory() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
-  // Year state
-  const [year, setYear] = useState(() => {
-      const saved = localStorage.getItem('usDirectoryYear');
-      return saved ? parseInt(saved, 10) : 2020;
-  });
-  const [yearInput, setYearInput] = useState(() => {
-      const saved = localStorage.getItem('usDirectoryYear');
-      return saved ? saved : '2020';
-  });
 
   useEffect(() => {
-      localStorage.setItem('usDirectoryYear', year.toString());
-  }, [year]);
+    if (!config) return;
 
-  useEffect(() => {
     setLoading(true);
     // Simulate API delay
     const timeoutId = setTimeout(() => {
-      const rawDataMap = getMockUSData(STATES);
+      const regionNames = config.regions.map(r => r.name);
+      const rawDataMap = config.mockDataFn(regionNames);
       
-      const enrichedData = STATES.map(stateName => {
+      const enrichedData = regionNames.map(stateName => {
         const stateRecords = rawDataMap[stateName] || [];
         // Find record for specific year, fallback to first available if missing
         let record = stateRecords.find(r => r.year === year);
@@ -96,7 +104,9 @@ function USADataDirectory() {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [year]);
+  }, [year, config]);
+
+  if (!config) return null;
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -112,7 +122,7 @@ function USADataDirectory() {
     );
   };
 
-  const activeDimensions = usDimensions.filter(d => visibleColumns.includes(d));
+  const activeDimensions = config.dimensions.filter(d => visibleColumns.includes(d));
 
   const handleCopy = (value, e) => {
     if (isDragging) return;
@@ -170,7 +180,7 @@ function USADataDirectory() {
   const dimensionStats = React.useMemo(() => {
     const stats = {};
     activeDimensions.forEach(dim => {
-      const key = usDimensionsMap[dim].key;
+      const key = config.dimensionsMap[dim].key;
       const values = data.map(r => r[key]).filter(v => v !== null && v !== undefined);
       if (values.length > 0) {
         stats[key] = {
@@ -180,10 +190,10 @@ function USADataDirectory() {
       }
     });
     return stats;
-  }, [data, activeDimensions]);
+  }, [data, activeDimensions, config]);
 
   const getHeatmapColor = (val, dimName) => {
-    const dimObj = usDimensionsMap[dimName];
+    const dimObj = config.dimensionsMap[dimName];
     if (!heatmapMode || val === null || val === undefined || !dimensionStats[dimObj.key]) return undefined;
     const { min, max } = dimensionStats[dimObj.key];
     if (max === min) return undefined;
@@ -192,8 +202,6 @@ function USADataDirectory() {
     if (dimObj.invert) {
         pct = 1 - pct;
     }
-    // To avoid extreme bright red/green which makes text unreadable, 
-    // clamp it slightly to the middle range [0.1, 0.9]
     const clampedPct = 0.1 + (pct * 0.8);
     const color = d3.interpolateRdYlGn(clampedPct);
     return color;
@@ -229,9 +237,9 @@ function USADataDirectory() {
       filteredData.sort((a, b) => {
         let aVal = a[sortConfig.key];
         let bVal = b[sortConfig.key];
-        if (usDimensionsMap[sortConfig.key]) {
-            aVal = a[usDimensionsMap[sortConfig.key].key];
-            bVal = b[usDimensionsMap[sortConfig.key].key];
+        if (config.dimensionsMap[sortConfig.key]) {
+            aVal = a[config.dimensionsMap[sortConfig.key].key];
+            bVal = b[config.dimensionsMap[sortConfig.key].key];
         }
 
         if (aVal === undefined || aVal === null) aVal = -Infinity;
@@ -243,7 +251,7 @@ function USADataDirectory() {
       });
     }
     return filteredData;
-  }, [data, sortConfig, searchTerm]);
+  }, [data, sortConfig, searchTerm, config]);
 
   const pinnedRows = sortedData.filter(r => pinnedStates.has(r.stateName));
   const unpinnedRows = sortedData.filter(r => !pinnedStates.has(r.stateName));
@@ -259,11 +267,11 @@ function USADataDirectory() {
   const exportCSV = () => {
     if (sortedData.length === 0) return;
     
-    const headers = ['State', ...activeDimensions, 'Data Year'];
+    const headers = ['Region', ...activeDimensions, 'Data Year'];
     const rows = sortedData.map(row => [
       `"${row.stateName}"`,
       ...activeDimensions.map(d => {
-          const key = usDimensionsMap[d].key;
+          const key = config.dimensionsMap[d].key;
           return row[key] !== null && row[key] !== undefined ? row[key] : '';
       }),
       row.year
@@ -275,7 +283,7 @@ function USADataDirectory() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `usa_state_data_${year}.csv`);
+    link.setAttribute("download", `${countryId}_region_data_${year}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -286,9 +294,9 @@ function USADataDirectory() {
       <div className="max-w-[90rem] mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">USA Data Directory</h1>
+            <h1 className="text-4xl font-bold mb-2">{config.name} Data Directory</h1>
             <p className="text-gray-600 max-w-2xl">
-              Explore data indicators across all 50 states. Click on any column header to sort.
+              Explore data indicators across {config.regions.length} regions. Click on any column header to sort.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -317,7 +325,7 @@ function USADataDirectory() {
               {showColumnMenu && (
                 <div className="absolute top-full left-0 mt-2 w-full bg-white border border-[#EBE9FC] rounded-xl shadow-lg z-50 p-2">
                   <div className="px-2 py-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Visible Indicators</div>
-                  {usDimensions.map(dim => (
+                  {config.dimensions.map(dim => (
                     <label key={dim} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -347,10 +355,10 @@ function USADataDirectory() {
           {/* Search */}
           <div className="flex-1 flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Search State</label>
+              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Search Region</label>
               <input
                 type="text"
-                placeholder="Search by state name..."
+                placeholder="Search by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-[#EBE9FC] bg-[#F9F8FF] focus:outline-none focus:ring-2 focus:ring-[#3A31D8]/50 text-[#010104] placeholder:text-gray-400 font-medium"
@@ -407,7 +415,7 @@ function USADataDirectory() {
               <thead className="bg-[#F9F8FF] font-bold text-xs uppercase tracking-wider text-gray-600">
                 <tr>
                   <th className="px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors whitespace-nowrap sticky top-0 left-0 bg-[#F9F8FF] z-30 hover:z-50 shadow-[1px_1px_0_0_#EBE9FC] align-middle" onClick={() => handleSort('stateName')}>
-                    State {renderSortIcon('stateName')}
+                    Region {renderSortIcon('stateName')}
                   </th>
                   {activeDimensions.map((dim) => (
                     <th 
@@ -435,7 +443,7 @@ function USADataDirectory() {
                         <button 
                           onClick={(e) => togglePin(row.stateName, e)}
                           className={`flex-shrink-0 focus:outline-none transition-colors ${isPinned ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500 opacity-0 group-hover:opacity-100'}`}
-                          title={isPinned ? "Unpin state" : "Pin state to top"}
+                          title={isPinned ? "Unpin region" : "Pin region to top"}
                         >
                           <Pin size={16} fill={isPinned ? "currentColor" : "none"} />
                         </button>
@@ -449,7 +457,7 @@ function USADataDirectory() {
                       </div>
                     </td>
                     {activeDimensions.map(dim => {
-                      const key = usDimensionsMap[dim].key;
+                      const key = config.dimensionsMap[dim].key;
                       const val = row[key];
                       return (
                       <td 
@@ -501,4 +509,4 @@ function USADataDirectory() {
   );
 }
 
-export default USADataDirectory;
+export default CountryDataDirectory;

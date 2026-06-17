@@ -28,6 +28,18 @@ export function ScopeProvider({ children }) {
         }
     }, [activeCountry]);
 
+    // Sync scope and active country with current URL
+    useEffect(() => {
+        const pathSegments = location.pathname.split('/');
+        if (pathSegments[1] === 'country' && pathSegments[2]) {
+            const currentCountry = pathSegments[2];
+            if (scope !== 'country') setScope('country');
+            if (activeCountry !== currentCountry) setActiveCountry(currentCountry);
+        } else if (pathSegments[1] === 'global') {
+            if (scope !== 'global') setScope('global');
+        }
+    }, [location.pathname, scope, activeCountry]);
+
     // Handle scope changes and routing updates
     const changeScope = (newScope, country = null) => {
         setScope(newScope);

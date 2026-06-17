@@ -8,11 +8,11 @@ import About from "./global/pages/About";
 import Choropleth from "./global/pages/Choropleth";
 import DataDirectory from "./global/pages/DataDirectory";
 
-// USA Profile
-import USAHome from "./countries/usa/pages/USAHome";
-import USAAnalysisWorkspace from "./countries/usa/pages/USAAnalysisWorkspace";
-import USAChoropleth from "./countries/usa/pages/USAChoropleth";
-import USADataDirectory from "./countries/usa/pages/USADataDirectory";
+// Country Profile
+import CountryHome from "./countries/pages/CountryHome";
+import CountryAnalysisWorkspace from "./countries/pages/CountryAnalysisWorkspace";
+import CountryChoropleth from "./countries/pages/CountryChoropleth";
+import CountryDataDirectory from "./countries/pages/CountryDataDirectory";
 
 function App() {
   const location = useLocation();
@@ -40,10 +40,10 @@ function App() {
 
           {/* Country Profile Routes */}
           <Route path="/country" element={<Navigate to="/country/usa" replace />} />
-          <Route path="/country/usa" element={<USAHome />} />
-          <Route path="/country/usa/analysis" element={<USAAnalysisWorkspace />} />
-          <Route path="/country/usa/choropleth" element={<USAChoropleth />} />
-          <Route path="/country/usa/directory" element={<USADataDirectory />} />
+          <Route path="/country/:countryId" element={<CountryHome />} />
+          <Route path="/country/:countryId/analysis" element={<CountryAnalysisWorkspace />} />
+          <Route path="/country/:countryId/choropleth" element={<CountryChoropleth />} />
+          <Route path="/country/:countryId/directory" element={<CountryDataDirectory />} />
         </Routes>
       </div>
       {(!isAnalysisPage && !isChoroplethPage) && <Footer />}

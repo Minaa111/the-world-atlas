@@ -3,8 +3,8 @@ import { countries } from "../../global/data/countries";
 import { Search, ArrowDown, MapPin } from "lucide-react";
 import { useScope } from "../context/ScopeContext";
 
-// Currently we only have the USA implemented.
-const AVAILABLE_COUNTRIES = ["US"];
+// Currently we only have the USA, Canada, and Australia implemented.
+const AVAILABLE_COUNTRIES = ["US", "CA", "AU"];
 
 export default function CountrySearch() {
     const { activeCountry, changeScope } = useScope();

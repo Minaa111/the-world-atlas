@@ -10,13 +10,36 @@ const ICON_MAP = {
     Leaf
 };
 
-export default function IndicatorSelector({ activeDimension, onChange }) {
+export default function IndicatorSelector({ activeDimension, onChange, dimensions, dimensionsMap }) {
     const [searchTerm, setSearchTerm] = useState('');
 
-    const activePillar = THEMATIC_PILLARS.find(p => p.indicators.some(i => i.label === activeDimension));
-    const ActiveIcon = activePillar ? ICON_MAP[activePillar.icon] : null;
-
     const filteredPillars = useMemo(() => {
+        // If local country dimensions are passed, use them as a single pillar
+        if (dimensions && dimensionsMap) {
+            const localIndicators = dimensions.map(dimName => ({
+                key: dimensionsMap[dimName].key,
+                label: dimName,
+                desc: `Regional data for ${dimName}`,
+                color: dimensionsMap[dimName].color
+            })).filter(ind => 
+                ind.label.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                ind.desc.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (localIndicators.length > 0) {
+                return [{
+                    id: 'local',
+                    label: 'Local Indicators',
+                    icon: 'Leaf',
+                    bg: 'bg-emerald-100',
+                    color: 'text-emerald-600',
+                    indicators: localIndicators
+                }];
+            }
+            return [];
+        }
+
+        // Global view fallback
         return THEMATIC_PILLARS.map(pillar => ({
             ...pillar,
             indicators: pillar.indicators.filter(ind => 
@@ -24,7 +47,12 @@ export default function IndicatorSelector({ activeDimension, onChange }) {
                 ind.desc.toLowerCase().includes(searchTerm.toLowerCase())
             )
         })).filter(pillar => pillar.indicators.length > 0);
-    }, [searchTerm]);
+    }, [searchTerm, dimensions, dimensionsMap]);
+
+    // Find the active pillar just for the icon
+    const activePillar = THEMATIC_PILLARS.find(p => p.indicators.some(i => i.label === activeDimension)) || 
+        (dimensions && dimensions.includes(activeDimension) ? { icon: 'Leaf', bg: 'bg-emerald-100', color: 'text-emerald-600' } : null);
+    const ActiveIcon = activePillar ? ICON_MAP[activePillar.icon] : null;
 
     return (
         <Listbox value={activeDimension} onChange={onChange}>
