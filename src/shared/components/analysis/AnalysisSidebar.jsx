@@ -30,7 +30,7 @@ const globalDimensionsMap = getDimensionsMap();
 
 const presetColors = ['#010104', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16'];
 
-function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors, entityKeyField = 'iso3', getFlagUrl, dimensionsMap }) {
+function SortableCountryItem({ country, color, onRemove, chartData, activeDimension, formatValue, isHidden, onToggleVisibility, setCustomColors, entityKeyField = 'iso3', getFlagUrl, dimensionsMap, isColorPickerOpen, onToggleColorPicker }) {
     const entityId = country[entityKeyField] || country.name;
     const {
         attributes,
@@ -39,8 +39,6 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
         transform,
         transition,
     } = useSortable({ id: country.name });
-
-    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -69,84 +67,90 @@ function SortableCountryItem({ country, color, onRemove, chartData, activeDimens
     }
 
     return (
-        <div ref={setNodeRef} style={style} className={`flex items-center gap-2 p-2 bg-white hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 group transition-colors ${isHidden ? 'opacity-50 grayscale' : ''}`}>
-            <div 
-                {...attributes} 
-                {...listeners} 
-                className="cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-500 rounded outline-none"
-            >
-                <GripVertical size={16} />
-            </div>
-            
-            
-            <div className="relative">
-                <button 
-                    onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-                    className="w-3 h-3 rounded-full shadow-sm shrink-0 cursor-pointer hover:scale-125 transition-transform outline-none" 
-                    style={{ backgroundColor: color }}
-                    title="Change color"
-                ></button>
-                {isColorPickerOpen && (
-                    <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-xl shadow-xl border border-[#EBE9FC] z-50 flex flex-wrap gap-1 w-[120px]">
-                        <div className="w-full flex justify-between items-center mb-1 pb-1 border-b border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Color</span>
-                            <button onClick={() => setIsColorPickerOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={12} /></button>
-                        </div>
-                        {presetColors.map(c => (
-                            <button
-                                key={c}
-                                onClick={() => {
-                                    setCustomColors(prev => ({ ...prev, [entityId]: c }));
-                                    setIsColorPickerOpen(false);
-                                }}
-                                className={`w-5 h-5 rounded-full hover:scale-110 transition-transform ${c === color ? 'ring-2 ring-offset-1 ring-indigo-500' : ''}`}
-                                style={{ backgroundColor: c }}
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
-            
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <div className="flex items-center gap-2">
-                    {country.code && (
-                        <img 
-                            src={getFlagUrl ? getFlagUrl(country.iso3 || country.code) : `https://flagcdn.com/w20/${(country.iso3 || country.code || '').toLowerCase()}.png`} 
-                            alt="flag"
-                            className="w-4 h-3 object-cover rounded-[2px]"
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                    )}
-                    <span className={`font-bold text-sm text-[#010104] truncate ${isHidden ? 'line-through' : ''}`}>{country.name}</span>
+        <div 
+            ref={setNodeRef}
+            style={style}
+            className={`group relative flex flex-col bg-white border rounded-xl shadow-sm transition-all ${
+                isHidden ? 'border-gray-200 bg-gray-50' : 'border-[#EBE9FC] hover:border-indigo-200 hover:shadow-md'
+            }`}
+            {...attributes}
+        >
+            <div className="flex items-center gap-3 p-3 w-full">
+                <div 
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-500 transition-colors"
+                    title="Drag to reorder"
+                >
+                    <GripVertical size={16} />
                 </div>
-                {latestVal !== null && (
-                    <div className="flex items-center gap-2 mt-0.5 text-xs">
-                        <span className="font-medium text-gray-600">{formatValue(latestVal)}</span>
-                        {deltaPct !== null && (
-                            <span className={`font-bold ${delta > 0 ? (dimInfo.key === 'homicide_rate' || dimInfo.key === 'pm25' || dimInfo.key === 'gini' ? 'text-red-500' : 'text-emerald-500') : (dimInfo.key === 'homicide_rate' || dimInfo.key === 'pm25' || dimInfo.key === 'gini' ? 'text-emerald-500' : 'text-red-500')}`}>
-                                {delta > 0 ? '+' : ''}{deltaPct}%
-                            </span>
+                
+                <div className="relative shrink-0 flex items-center justify-center">
+                    <button 
+                        onClick={onToggleColorPicker}
+                        className="w-3 h-3 rounded-full shadow-sm cursor-pointer hover:scale-125 transition-transform outline-none" 
+                        style={{ backgroundColor: color }}
+                        title="Change color"
+                    ></button>
+                </div>
+                
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="flex items-center gap-2">
+                        {country.code && (
+                            <img 
+                                src={getFlagUrl ? getFlagUrl(country.iso3 || country.code) : `https://flagcdn.com/w20/${(country.iso3 || country.code || '').toLowerCase()}.png`} 
+                                alt="flag"
+                                className="w-4 h-3 object-cover rounded-[2px]"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                            />
                         )}
+                        <span className={`font-bold text-sm text-[#010104] truncate ${isHidden ? 'line-through text-gray-400' : ''}`}>{country.name}</span>
                     </div>
-                )}
+                    {latestVal !== null && (
+                        <div className="flex items-center gap-2 mt-0.5 text-xs">
+                            <span className="font-medium text-gray-600">{formatValue(latestVal)}</span>
+                            {deltaPct !== null && (
+                                <span className={`font-bold ${delta > 0 ? (dimInfo.key === 'homicide_rate' || dimInfo.key === 'pm25' || dimInfo.key === 'gini' ? 'text-red-500' : 'text-emerald-500') : (dimInfo.key === 'homicide_rate' || dimInfo.key === 'pm25' || dimInfo.key === 'gini' ? 'text-emerald-500' : 'text-red-500')}`}>
+                                    {delta > 0 ? '+' : ''}{deltaPct}%
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => onToggleVisibility(entityId)}
+                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors outline-none"
+                        title={isHidden ? "Show in charts" : "Hide from charts"}
+                    >
+                        {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    <button
+                        onClick={() => onRemove(country.name)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none"
+                        title="Remove entity"
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
             </div>
 
-            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                    onClick={() => onToggleVisibility(entityId)}
-                    className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors outline-none"
-                    title={isHidden ? "Show in charts" : "Hide from charts"}
-                >
-                    {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-                <button
-                    onClick={() => onRemove(country.name)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none"
-                    title="Remove entity"
-                >
-                    <X size={14} />
-                </button>
-            </div>
+            {/* Inline Color Picker Accordion */}
+            {isColorPickerOpen && (
+                <div className="p-3 bg-gray-50/50 border-t border-[#EBE9FC] rounded-b-xl flex flex-wrap gap-2 w-full justify-center">
+                    {presetColors.map(c => (
+                        <button
+                            key={c}
+                            onClick={() => {
+                                setCustomColors(prev => ({ ...prev, [entityId]: c }));
+                                onToggleColorPicker();
+                            }}
+                            className={`w-6 h-6 rounded-full hover:scale-110 transition-transform shadow-sm ${c === color ? 'ring-2 ring-offset-2 ring-indigo-500' : ''}`}
+                            style={{ backgroundColor: c }}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -179,6 +183,7 @@ export default function AnalysisSidebar({
     const [isViewModeOpen, setIsViewModeOpen] = useState(true);
     const [isEntitiesOpen, setIsEntitiesOpen] = useState(true);
     const [isControlsOpen, setIsControlsOpen] = useState(true);
+    const [openColorPickerId, setOpenColorPickerId] = useState(null);
 
     const dimensionsMap = propDimensionsMap || globalDimensionsMap;
     
@@ -328,6 +333,11 @@ export default function AnalysisSidebar({
                                             entityKeyField={entityKeyField}
                                             getFlagUrl={getFlagUrl}
                                             dimensionsMap={dimensionsMap}
+                                            isColorPickerOpen={openColorPickerId === (country[entityKeyField] || country.name)}
+                                            onToggleColorPicker={() => {
+                                                const id = country[entityKeyField] || country.name;
+                                                setOpenColorPickerId(prev => prev === id ? null : id);
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -358,6 +368,7 @@ export default function AnalysisSidebar({
                                     onChange={setActiveDimension} 
                                     dimensionsMap={dimensionsMap}
                                     dimensions={dimensions} 
+                                    isLocal={!!propDimensionsMap}
                                 />
                             </div>
                         )}
@@ -372,6 +383,7 @@ export default function AnalysisSidebar({
                                         onChange={setScatterY} 
                                         dimensionsMap={dimensionsMap}
                                         dimensions={dimensions} 
+                                        isLocal={!!propDimensionsMap}
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -381,6 +393,7 @@ export default function AnalysisSidebar({
                                         onChange={setScatterX} 
                                         dimensionsMap={dimensionsMap}
                                         dimensions={dimensions} 
+                                        isLocal={!!propDimensionsMap}
                                     />
                                 </div>
                             </div>

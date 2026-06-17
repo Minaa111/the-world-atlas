@@ -10,12 +10,12 @@ const ICON_MAP = {
     Leaf
 };
 
-export default function IndicatorSelector({ activeDimension, onChange, dimensions, dimensionsMap }) {
+export default function IndicatorSelector({ activeDimension, onChange, dimensions, dimensionsMap, isLocal }) {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredPillars = useMemo(() => {
         // If local country dimensions are passed, use them as a single pillar
-        if (dimensions && dimensionsMap) {
+        if (isLocal && dimensions && dimensionsMap) {
             const localIndicators = dimensions.map(dimName => ({
                 key: dimensionsMap[dimName].key,
                 label: dimName,
@@ -97,7 +97,8 @@ export default function IndicatorSelector({ activeDimension, onChange, dimension
                             </div>
                         </div>
 
-                        <div className="overflow-y-auto flex-1 p-2">
+                        <div className="overflow-y-auto flex-1 px-2 pb-2">
+                            <div className="h-2 shrink-0" />
                             {filteredPillars.length === 0 ? (
                                 <div className="p-4 text-center text-sm text-gray-500">
                                     No indicators found matching "{searchTerm}"
@@ -107,7 +108,7 @@ export default function IndicatorSelector({ activeDimension, onChange, dimension
                                     const PillarIcon = ICON_MAP[pillar.icon];
                                     return (
                                         <div key={pillar.id} className="mb-4 last:mb-0">
-                                            <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider sticky top-0 bg-white/95 backdrop-blur-sm z-10 rounded-t-lg">
+                                            <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider sticky top-0 bg-white/95 backdrop-blur-md z-10 rounded-t-lg">
                                                 <PillarIcon size={14} className={pillar.color} />
                                                 {pillar.label}
                                             </div>

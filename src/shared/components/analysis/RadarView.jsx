@@ -83,12 +83,12 @@ export default function RadarView({
                                 padding: 24,
                                 font: { size: 12, weight: 'bold' },
                                 color: function(context) {
-                                    const dimName = dimensions[context.index];
+                                    const dimName = visibleDimensions[context.index];
                                     const raw = latest[dimensionsMap[dimName].key];
                                     return (raw === undefined || raw === null) ? '#9ca3af' : '#010104';
                                 },
                                 callback: function (value, index) {
-                                    const dimName = dimensions[index];
+                                    const dimName = visibleDimensions[index];
                                     const max = globalMaxValues[dimensionsMap[dimName].key];
                                     let maxStr = formatValue(max);
                                     if (maxStr.endsWith('.00')) maxStr = maxStr.slice(0, -3);

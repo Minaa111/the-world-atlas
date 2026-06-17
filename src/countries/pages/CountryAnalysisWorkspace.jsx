@@ -9,6 +9,8 @@ import PolarView from "../../shared/components/analysis/PolarView";
 import CorrelationView from "../../shared/components/analysis/CorrelationView";
 import DataTableView from "../../shared/components/analysis/DataTableView";
 import RegionList from "../components/RegionList";
+import { LineChart, Plus } from "lucide-react";
+import { motion } from "framer-motion";
 
 // Shared chart.js registration happens in App or index normally, but ensure it's registered
 import {
@@ -261,11 +263,29 @@ export default function CountryAnalysisWorkspace() {
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-auto">
-                <div id="analysis-workspace-content" className="w-full flex-1 p-6 lg:p-8 overflow-y-auto">
+                <div id="analysis-workspace-content" className="w-full flex-1 flex flex-col min-h-0 p-6 lg:p-8 overflow-y-auto">
                     {visibleRegions.length === 0 ? (
-                        <div className="text-center z-10 flex flex-col items-center justify-center h-full bg-white w-full rounded-3xl shadow-sm border border-[#EBE9FC]">
-                            <h3 className="text-2xl font-bold text-[#010104] tracking-wide mb-2">Analysis Workspace</h3>
-                            <p className="text-gray-500 font-medium">Select regions to visualize insights.</p>
+                        <div className="flex-1 flex flex-col items-center justify-center relative">
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl shadow-sm border border-[#EBE9FC] text-center w-full max-w-lg"
+                            >
+                                <div className="w-16 h-16 bg-indigo-50 text-indigo-400 rounded-full flex items-center justify-center mb-6">
+                                    <LineChart size={32} />
+                                </div>
+                                <h3 className="text-xl font-black text-[#010104] mb-3">Blank Canvas</h3>
+                                <p className="text-gray-500 mb-8 max-w-sm">
+                                    Your workspace is ready. Select regions from the sidebar or map to begin your analysis.
+                                </p>
+                                <button 
+                                    onClick={() => setIsAddModalOpen(true)}
+                                    className="flex items-center gap-2 px-6 py-3 bg-[#010104] hover:bg-gray-800 text-white font-bold rounded-xl transition-colors shadow-lg shadow-black/10 mx-auto"
+                                >
+                                    <Plus size={18} />
+                                    Add First Region
+                                </button>
+                            </motion.div>
                         </div>
                     ) : isLoading ? (
                         <div className="flex items-center justify-center h-full">
@@ -314,6 +334,7 @@ export default function CountryAnalysisWorkspace() {
                                     globalMaxValues={globalMaxValues}
                                     gridCols={gridCols}
                                     playbackYear={playbackYear}
+                                    hiddenColumns={hiddenColumns}
                                 />
                             )}
                             {viewTab === "polar" && (
@@ -328,6 +349,7 @@ export default function CountryAnalysisWorkspace() {
                                     globalMaxValues={globalMaxValues}
                                     gridCols={gridCols}
                                     playbackYear={playbackYear}
+                                    hiddenColumns={hiddenColumns}
                                 />
                             )}
                             {viewTab === "scatter" && (
@@ -355,6 +377,7 @@ export default function CountryAnalysisWorkspace() {
                                     dimensionsMap={config.dimensionsMap}
                                     formatValue={formatValue}
                                     hiddenColumns={hiddenColumns}
+                                    playbackYear={playbackYear}
                                 />
                             )}
                         </div>
@@ -406,6 +429,7 @@ export default function CountryAnalysisWorkspace() {
                                         selectedRegions={selectedRegions}
                                         regions={config.regions}
                                         regionCodePrefix={config.regionCodePrefix}
+                                        getFlagUrl={config.getFlagUrl}
                                     />
                                 </div>
                             )}

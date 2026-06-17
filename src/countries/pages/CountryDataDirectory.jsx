@@ -199,12 +199,10 @@ function CountryDataDirectory() {
     if (max === min) return undefined;
     
     let pct = (val - min) / (max - min);
-    if (dimObj.invert) {
-        pct = 1 - pct;
-    }
-    const clampedPct = 0.1 + (pct * 0.8);
-    const color = d3.interpolateRdYlGn(clampedPct);
-    return color;
+    if (dimObj.invert) pct = 1 - pct;
+    
+    const hue = pct * 120; // 0 = Red, 120 = Green
+    return `hsl(${hue}, 70%, 92%)`;
   };
 
   const handleYearChange = (e) => {
