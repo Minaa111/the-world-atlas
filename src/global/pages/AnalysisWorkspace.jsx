@@ -164,6 +164,10 @@ export default function Analysis() {
     }, [scatterY]);
 
     useEffect(() => {
+        setIsPlaying(false);
+    }, [viewTab]);
+
+    useEffect(() => {
         if (location.state?.initialCountry) {
             // Clear the location state so we don't re-add on re-renders
             window.history.replaceState({}, document.title);
@@ -490,49 +494,6 @@ export default function Analysis() {
                 transition={{ duration: 0.3 }}
                 className="w-full h-full bg-white rounded-[2rem] shadow-sm border border-[#EBE9FC] flex flex-col overflow-hidden relative"
             >
-                {/* Dynamic Canvas Header */}
-                <div className="px-8 py-5 border-b border-[#EBE9FC] flex justify-between items-center bg-white/80 backdrop-blur-md z-20 shrink-0">
-                    <h2 className="text-lg font-black text-[#010104] tracking-tight">{viewNames[viewTab]}</h2>
-                    
-                    <div className="flex items-center gap-4">
-                        {/* Time Lapse Playback Controls */}
-                        {availableYears.length > 0 && viewTab !== 'time' && (
-                            <div className="flex items-center gap-4 bg-gray-50/80 px-4 py-2 rounded-2xl border border-[#EBE9FC]">
-                                <button
-                                    onClick={() => setIsPlaying(!isPlaying)}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isPlaying ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'}`}
-                                >
-                                    {isPlaying ? (
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                                    ) : (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                    )}
-                                </button>
-                                
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-gray-400">{availableYears[0]}</span>
-                                    <input 
-                                        type="range" 
-                                        min={0}
-                                        max={availableYears.length - 1}
-                                        value={availableYears.indexOf(playbackYear) !== -1 ? availableYears.indexOf(playbackYear) : 0}
-                                        onChange={(e) => {
-                                            setIsPlaying(false);
-                                            setPlaybackYear(availableYears[parseInt(e.target.value)]);
-                                        }}
-                                        className="w-48 accent-indigo-600"
-                                    />
-                                    <span className="text-xs font-bold text-gray-400">{availableYears[availableYears.length - 1]}</span>
-                                </div>
-                                
-                                <div className="px-3 py-1 bg-white rounded-lg shadow-sm border border-[#EBE9FC] min-w-[60px] text-center">
-                                    <span className="font-black text-indigo-600 tracking-wider">{playbackYear}</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
                 <div className="flex-1 relative min-h-0 bg-gray-50/30">
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -658,6 +619,11 @@ export default function Analysis() {
                 handleDownloadCSV={handleDownloadCSV} 
                 handleDownloadPDF={handleDownloadPDF} 
                 handleDownloadPNG={handleDownloadPNG}
+                playbackYear={playbackYear}
+                setPlaybackYear={setPlaybackYear}
+                availableYears={availableYears}
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
                 isExporting={isExporting}
                 getEntityColor={getEntityColor} 
                 setCustomColors={setCustomColors}

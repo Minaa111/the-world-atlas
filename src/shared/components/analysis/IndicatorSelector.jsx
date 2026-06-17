@@ -28,8 +28,9 @@ export default function IndicatorSelector({ activeDimension, onChange }) {
 
     return (
         <Listbox value={activeDimension} onChange={onChange}>
-            <div className="relative w-full max-w-sm">
-                <Listbox.Button className="relative w-full flex items-center justify-between gap-3 px-4 py-3 bg-white border border-[#EBE9FC] rounded-xl shadow-sm hover:border-indigo-300 transition-colors text-left group focus:outline-none">
+            {({ open }) => (
+                <div className={`relative w-full max-w-sm ${open ? 'z-[70]' : 'z-10'}`}>
+                    <Listbox.Button className="relative w-full flex items-center justify-between gap-3 px-4 py-3 bg-white border border-[#EBE9FC] rounded-xl shadow-sm hover:border-indigo-300 transition-colors text-left group focus:outline-none">
                     <div className="flex items-center gap-3 overflow-hidden">
                         {ActiveIcon && (
                             <div className={`p-1.5 rounded-lg ${activePillar.bg} ${activePillar.color}`}>
@@ -124,7 +125,8 @@ export default function IndicatorSelector({ activeDimension, onChange }) {
                         </div>
                     </Listbox.Options>
                 </Transition>
-            </div>
+                </div>
+            )}
         </Listbox>
     );
 }
