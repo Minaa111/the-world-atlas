@@ -11,6 +11,8 @@ import DataTableView from "../../shared/components/analysis/DataTableView";
 import RegionList from "../components/RegionList";
 import { LineChart, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 // Shared chart.js registration happens in App or index normally, but ensure it's registered
 import {
@@ -219,6 +221,142 @@ export default function CountryAnalysisWorkspace() {
         return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    const handleDownloadCSV = () => {
+        if (selectedRegions.length === 0) return;
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+
+        const cols = ["Region", "Code", "Year", "Is_Forecast"];
+        config.dimensions.forEach(dim => cols.push(dim));
+        csvContent += cols.join(",") + "\n";
+
+        selectedRegions.forEach(region => {
+            const entityId = region.name;
+            const cData = chartData[entityId] || [];
+            cData.forEach(row => {
+                if (!showForecast && row.is_forecast) return;
+
+                const rowData = [
+                    `"${region.name}"`,
+                    region.code || region.iso2 || "",
+                    row.year,
+                    row.is_forecast ? "Yes" : "No"
+                ];
+
+                config.dimensions.forEach(dim => {
+                    const key = config.dimensionsMap[dim].key;
+                    rowData.push(row[key] !== null && row[key] !== undefined ? row[key] : "");
+                });
+
+                csvContent += rowData.join(",") + "\n";
+            });
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `inequality_atlas_${config.id}_data.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleDownloadPDF = async () => {
+        if (selectedRegions.length === 0) return;
+
+        setIsExporting(true);
+        try {
+            const element = document.getElementById("analysis-workspace-content");
+            if (!element) return;
+
+            const canvases = element.querySelectorAll('canvas');
+            const replacedImages = [];
+
+            canvases.forEach(canvas => {
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                img.style.width = canvas.style.width;
+                img.style.height = canvas.style.height;
+                img.style.boxSizing = 'border-box';
+
+                canvas.style.display = 'none';
+                canvas.parentNode.insertBefore(img, canvas);
+                replacedImages.push({ canvas, img });
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const renderCanvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#F9F8FF" });
+            const imgData = renderCanvas.toDataURL('image/png');
+
+            const pdf = new jsPDF({
+                orientation: renderCanvas.width > renderCanvas.height ? 'landscape' : 'portrait',
+                unit: 'px',
+                format: [renderCanvas.width, renderCanvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, renderCanvas.width, renderCanvas.height);
+            pdf.save(`Inequality_Atlas_${config.id}_${viewTab}_Report.pdf`);
+
+            replacedImages.forEach(({ canvas, img }) => {
+                canvas.style.display = '';
+                img.parentNode.removeChild(img);
+            });
+
+        } catch (error) {
+            console.error("Error generating PDF", error);
+            alert(`Error generating PDF: ${error.message || error}`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleDownloadPNG = async () => {
+        if (selectedRegions.length === 0) return;
+
+        setIsExporting(true);
+        try {
+            const element = document.getElementById("analysis-workspace-content");
+            if (!element) return;
+
+            const canvases = element.querySelectorAll('canvas');
+            const replacedImages = [];
+
+            canvases.forEach(canvas => {
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png', 1.0);
+                img.style.width = canvas.style.width;
+                img.style.height = canvas.style.height;
+                img.style.boxSizing = 'border-box';
+
+                canvas.style.display = 'none';
+                canvas.parentNode.insertBefore(img, canvas);
+                replacedImages.push({ canvas, img });
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const renderCanvas = await html2canvas(element, { scale: 3, useCORS: true, backgroundColor: "#F9F8FF" });
+            const imgData = renderCanvas.toDataURL('image/png');
+
+            const link = document.createElement("a");
+            link.download = `Inequality_Atlas_${config.id}_${viewTab}_Export.png`;
+            link.href = imgData;
+            link.click();
+
+            replacedImages.forEach(({ canvas, img }) => {
+                canvas.style.display = '';
+                img.parentNode.removeChild(img);
+            });
+
+        } catch (error) {
+            console.error("Error generating PNG", error);
+            alert(`Error generating PNG: ${error.message || error}`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="flex h-screen bg-[#F9F8FF] overflow-hidden">
             {/* Sidebar */}
@@ -258,6 +396,9 @@ export default function CountryAnalysisWorkspace() {
                 availableYears={availableYears}
                 entityKeyField="name" // Important for country scope vs global iso3
                 getFlagUrl={config.getFlagUrl}
+                handleDownloadCSV={handleDownloadCSV}
+                handleDownloadPDF={handleDownloadPDF}
+                handleDownloadPNG={handleDownloadPNG}
                 onExit={() => navigate(`/country/${config.id}`)}
             />
 
