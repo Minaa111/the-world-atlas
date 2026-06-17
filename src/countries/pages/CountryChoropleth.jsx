@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import * as d3 from 'd3';
@@ -14,6 +14,39 @@ export default function CountryChoropleth() {
     const [yearInput, setYearInput] = useState('2023');
     const [regionData, setRegionData] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const dimensionsRef = useRef(null);
+    const [isMouseDown, setIsMouseDown] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const onMouseDown = (e) => {
+        setIsMouseDown(true);
+        setStartX(e.pageX - dimensionsRef.current.offsetLeft);
+        setScrollLeft(dimensionsRef.current.scrollLeft);
+    };
+
+    const onMouseLeave = () => {
+        setIsMouseDown(false);
+    };
+
+    const onMouseUp = () => {
+        setIsMouseDown(false);
+    };
+
+    const onMouseMove = (e) => {
+        if (!isMouseDown) return;
+        e.preventDefault();
+        const x = e.pageX - dimensionsRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        dimensionsRef.current.scrollLeft = scrollLeft - walk;
+    };
+
+    const onWheel = (e) => {
+        if (e.deltaY !== 0 && e.deltaX === 0) {
+            dimensionsRef.current.scrollLeft += e.deltaY;
+        }
+    };
 
     useEffect(() => {
         if (!config) {
@@ -118,14 +151,23 @@ export default function CountryChoropleth() {
             <div className="w-[90%] max-w-6xl mx-auto mb-6 z-10 pointer-events-none flex flex-col gap-4">
                 
                 {/* Dimensions Bar */}
-                <div className="flex justify-center flex-wrap gap-2 pointer-events-auto">
+                <div 
+                    ref={dimensionsRef}
+                    className="w-full overflow-x-auto pb-3 pointer-events-auto custom-scrollbar"
+                    onMouseDown={onMouseDown}
+                    onMouseLeave={onMouseLeave}
+                    onMouseUp={onMouseUp}
+                    onMouseMove={onMouseMove}
+                    onWheel={onWheel}
+                >
+                    <div className="flex items-center justify-start sm:justify-center flex-nowrap w-max min-w-full gap-2 px-2">
                     {config.dimensions.map(dim => {
                         const isActive = dimension === dim;
                         return (
                             <button
                                 key={dim}
                                 onClick={() => setDimension(dim)}
-                                className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm border ${
+                                className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm border ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'} ${
                                     isActive 
                                         ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] transform scale-105' 
                                         : 'bg-white text-gray-600 hover:text-[#010104] border-[#EBE9FC] hover:border-gray-300'
@@ -135,6 +177,7 @@ export default function CountryChoropleth() {
                             </button>
                         );
                     })}
+                    </div>
                 </div>
 
                 {/* Legend and Time Controls */}

@@ -28,6 +28,16 @@ class AnnualIndicator(db.Model):
     pm25 = db.Column(db.Float, nullable=True)
     gni = db.Column(db.Float, nullable=True)
     gni_per_capita = db.Column(db.Float, nullable=True)
+    inflation_rate = db.Column(db.Float, nullable=True)
+    unemployment_rate = db.Column(db.Float, nullable=True)
+    poverty_ratio = db.Column(db.Float, nullable=True)
+    population = db.Column(db.Float, nullable=True)
+    fertility_rate = db.Column(db.Float, nullable=True)
+    infant_mortality = db.Column(db.Float, nullable=True)
+    gpi = db.Column(db.Float, nullable=True)
+    co2_emissions = db.Column(db.Float, nullable=True)
+    electricity_access = db.Column(db.Float, nullable=True)
+    internet_usage = db.Column(db.Float, nullable=True)
 
     def to_dict(self):
         return {
@@ -39,7 +49,17 @@ class AnnualIndicator(db.Model):
             'homicide_rate': self.homicide_rate,
             'pm25': self.pm25,
             'gni': self.gni,
-            'gni_per_capita': self.gni_per_capita
+            'gni_per_capita': self.gni_per_capita,
+            'inflation_rate': self.inflation_rate,
+            'unemployment_rate': self.unemployment_rate,
+            'poverty_ratio': self.poverty_ratio,
+            'population': self.population,
+            'fertility_rate': self.fertility_rate,
+            'infant_mortality': self.infant_mortality,
+            'gpi': self.gpi,
+            'co2_emissions': self.co2_emissions,
+            'electricity_access': self.electricity_access,
+            'internet_usage': self.internet_usage
         }
 
 @app.route('/api/data', methods=['GET'])
@@ -93,7 +113,7 @@ def compare_data():
         result[c].append(d)
         
     if forecast_param:
-        dimensions = ['gini', 'life_expectancy', 'literacy_rate', 'homicide_rate', 'pm25', 'gni', 'gni_per_capita']
+        dimensions = ['gini', 'life_expectancy', 'literacy_rate', 'homicide_rate', 'pm25', 'gni', 'gni_per_capita', 'inflation_rate', 'unemployment_rate', 'poverty_ratio', 'population', 'fertility_rate', 'infant_mortality', 'gpi', 'co2_emissions', 'electricity_access', 'internet_usage']
         for c in result:
             forecasts_by_year = {}
             for dim in dimensions:
@@ -104,7 +124,10 @@ def compare_data():
                         forecasts_by_year[y] = {
                             'year': y, 'country': c, 'is_forecast': True, 
                             'gini': None, 'life_expectancy': None, 'literacy_rate': None, 
-                            'homicide_rate': None, 'pm25': None, 'gni': None, 'gni_per_capita': None
+                            'homicide_rate': None, 'pm25': None, 'gni': None, 'gni_per_capita': None,
+                            'inflation_rate': None, 'unemployment_rate': None, 'poverty_ratio': None,
+                            'population': None, 'fertility_rate': None, 'infant_mortality': None,
+                            'gpi': None, 'co2_emissions': None, 'electricity_access': None, 'internet_usage': None
                         }
                     val = p[dim]
                     if val < 0: val = 0

@@ -3,15 +3,16 @@ import axios from 'axios';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, Loader2, Layout, Info, Pin, Map } from 'lucide-react';
 import { countries as countriesData } from '../../global/data/countries';
 
-const dimensions = [
-  { key: 'gni', label: 'Gross National Income (GNI)', desc: 'Gross National Income in billions of current US dollars.' },
-  { key: 'gni_per_capita', label: 'GNI per capita', desc: 'Gross National Income divided by midyear population.' },
-  { key: 'gini', label: 'Gini Index', invert: true, desc: 'Measures income inequality (0 = perfect equality, 100 = perfect inequality).' },
-  { key: 'life_expectancy', label: 'Life Expectancy', desc: 'Average number of years a newborn is expected to live.' },
-  { key: 'literacy_rate', label: 'Literacy Rate', desc: 'Percentage of the population age 15 and older who can read and write.' },
-  { key: 'homicide_rate', label: 'Intentional Homicide Rate', invert: true, desc: 'Intentional homicides per 100,000 people.' },
-  { key: 'pm25', label: 'PM2.5 Air Pollution', invert: true, desc: 'Mean annual exposure to fine particulate matter.' },
-];
+import { THEMATIC_PILLARS } from '../../shared/config/indicators';
+
+const dimensions = THEMATIC_PILLARS.flatMap(pillar => 
+  pillar.indicators.map(ind => ({
+    key: ind.key,
+    label: ind.label,
+    desc: ind.desc,
+    invert: ind.invert
+  }))
+);
 
 const continentsList = ["All", ...new Set(countriesData.map(c => c.continent).filter(Boolean))];
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Globe as GlobeIcon, Map as MapIcon, Loader2 } from 'lucide-react';
 import * as d3 from 'd3';
@@ -6,15 +6,15 @@ import Globe from '../../global/components/Globe';
 import Map from '../../global/components/Map';
 import lookup from 'country-code-lookup';
 
-const DIMENSIONS = [
-    { id: 'gni', label: 'Gross National Income (GNI)', unit: 'B' },
-    { id: 'gni_per_capita', label: 'GNI per capita', unit: '' },
-    { id: 'gini', label: 'Gini Index', unit: '' },
-    { id: 'life_expectancy', label: 'Life Expectancy', unit: 'Years' },
-    { id: 'literacy_rate', label: 'Literacy Rate', unit: '%' },
-    { id: 'homicide_rate', label: 'Intentional Homicide Rate', unit: '/100k' },
-    { id: 'pm25', label: 'PM2.5 Air Pollution', unit: 'µg/m³' }
-];
+import { THEMATIC_PILLARS } from '../../shared/config/indicators';
+
+const DIMENSIONS = THEMATIC_PILLARS.flatMap(pillar => 
+    pillar.indicators.map(ind => ({
+        id: ind.key,
+        label: ind.label,
+        unit: ind.unit
+    }))
+);
 
 export default function Choropleth() {
     const navigate = useNavigate();
@@ -30,6 +30,40 @@ export default function Choropleth() {
     const [dimension, setDimension] = useState('gni');
     const [globalData, setGlobalData] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const dimensionsRef = useRef(null);
+    const [isMouseDown, setIsMouseDown] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const onMouseDown = (e) => {
+        setIsMouseDown(true);
+        setStartX(e.pageX - dimensionsRef.current.offsetLeft);
+        setScrollLeft(dimensionsRef.current.scrollLeft);
+    };
+
+    const onMouseLeave = () => {
+        setIsMouseDown(false);
+    };
+
+    const onMouseUp = () => {
+        setIsMouseDown(false);
+    };
+
+    const onMouseMove = (e) => {
+        if (!isMouseDown) return;
+        e.preventDefault();
+        const x = e.pageX - dimensionsRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        dimensionsRef.current.scrollLeft = scrollLeft - walk;
+    };
+
+    const onWheel = (e) => {
+        // Only convert vertical scroll to horizontal if there is no horizontal scroll
+        if (e.deltaY !== 0 && e.deltaX === 0) {
+            dimensionsRef.current.scrollLeft += e.deltaY;
+        }
+    };
 
     useEffect(() => {
         localStorage.setItem('choroplethYear', year.toString());
@@ -158,14 +192,23 @@ export default function Choropleth() {
             <div className="w-[90%] max-w-6xl mx-auto mb-6 z-10 pointer-events-none flex flex-col gap-4">
                 
                 {/* Dimensions Bar */}
-                <div className="flex justify-center flex-wrap gap-2 pointer-events-auto">
+                <div 
+                    ref={dimensionsRef}
+                    className="w-full overflow-x-auto pb-3 pointer-events-auto custom-scrollbar"
+                    onMouseDown={onMouseDown}
+                    onMouseLeave={onMouseLeave}
+                    onMouseUp={onMouseUp}
+                    onMouseMove={onMouseMove}
+                    onWheel={onWheel}
+                >
+                    <div className="flex items-center justify-start sm:justify-center flex-nowrap w-max min-w-full gap-2 px-2">
                     {DIMENSIONS.map(dim => {
                         const isActive = dimension === dim.id;
                         return (
                             <button
                                 key={dim.id}
                                 onClick={() => setDimension(dim.id)}
-                                className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm border ${
+                                className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200 shadow-sm border ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'} ${
                                     isActive 
                                         ? 'bg-[#010104] text-[#EBE9FC] border-[#010104] transform scale-105' 
                                         : 'bg-white text-gray-600 hover:text-[#010104] border-[#EBE9FC] hover:border-gray-300'
@@ -175,6 +218,7 @@ export default function Choropleth() {
                             </button>
                         );
                     })}
+                    </div>
                 </div>
 
                 {/* Legend and Time Controls */}

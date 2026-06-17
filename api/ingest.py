@@ -42,11 +42,6 @@ def process_homicide():
     return df
 
 with app.app_context():
-    # Setup DB
-    db.create_all()
-    # Clear existing data just in case
-    db.session.query(AnnualIndicator).delete()
-    db.session.commit()
 
     print("Loading CSVs...")
     df_gini = process_wb_csv(os.path.join(datasets_dir, 'gini.csv'), 'gini')
@@ -56,19 +51,30 @@ with app.app_context():
     df_gni = process_wb_csv(os.path.join(datasets_dir, 'gni.csv'), 'gni')
     df_gni_pc = process_wb_csv(os.path.join(datasets_dir, 'gni-per-capita.csv'), 'gni_per_capita')
     
+    df_inf = process_wb_csv(os.path.join(datasets_dir, 'inflation.csv'), 'inflation_rate')
+    df_uem = process_wb_csv(os.path.join(datasets_dir, 'unemployment.csv'), 'unemployment_rate')
+    df_pov = process_wb_csv(os.path.join(datasets_dir, 'poverty.csv'), 'poverty_ratio')
+    df_pop = process_wb_csv(os.path.join(datasets_dir, 'population.csv'), 'population')
+    df_fer = process_wb_csv(os.path.join(datasets_dir, 'fertility.csv'), 'fertility_rate')
+    df_imr = process_wb_csv(os.path.join(datasets_dir, 'infant_mortality.csv'), 'infant_mortality')
+    df_gpi = process_wb_csv(os.path.join(datasets_dir, 'gpi.csv'), 'gpi')
+    df_co2 = process_wb_csv(os.path.join(datasets_dir, 'co2.csv'), 'co2_emissions')
+    df_elc = process_wb_csv(os.path.join(datasets_dir, 'electricity.csv'), 'electricity_access')
+    df_net = process_wb_csv(os.path.join(datasets_dir, 'internet.csv'), 'internet_usage')
+
     print("Loading Homicide XLS...")
     df_hom = process_homicide()
 
     print("Merging data...")
     from functools import reduce
-    dataframes = [df_gini, df_life, df_lit, df_pm25, df_hom, df_gni, df_gni_pc]
+    dataframes = [df_gini, df_life, df_lit, df_pm25, df_hom, df_gni, df_gni_pc, df_inf, df_uem, df_pov, df_pop, df_fer, df_imr, df_gpi, df_co2, df_elc, df_net]
     df_merged = reduce(lambda left, right: pd.merge(left, right, on=['iso3', 'year'], how='outer'), dataframes)
 
     df_merged.rename(columns={'iso3': 'country'}, inplace=True)
-    metrics = ['gini', 'life_expectancy', 'literacy_rate', 'homicide_rate', 'pm25', 'gni', 'gni_per_capita']
+    metrics = ['gini', 'life_expectancy', 'literacy_rate', 'homicide_rate', 'pm25', 'gni', 'gni_per_capita', 'inflation_rate', 'unemployment_rate', 'poverty_ratio', 'population', 'fertility_rate', 'infant_mortality', 'gpi', 'co2_emissions', 'electricity_access', 'internet_usage']
     df_merged.dropna(how='all', subset=metrics, inplace=True)
 
     print("Inserting into database...")
-    df_merged.to_sql('annual_indicator', db.engine, if_exists='append', index=False)
+    df_merged.to_sql('annual_indicator', db.engine, if_exists='replace', index=False)
 
     print("Data ingestion completed successfully!")

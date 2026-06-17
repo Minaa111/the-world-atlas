@@ -6,8 +6,11 @@ export const THEMATIC_PILLARS = [
         color: 'text-pink-500',
         bg: 'bg-pink-50',
         indicators: [
-            { key: "gni", label: "Gross National Income (GNI)", color: "#ec4899", desc: "Total domestic and foreign output claimed by residents." },
-            { key: "gni_per_capita", label: "GNI per capita", color: "#14b8a6", desc: "GNI divided by midyear population." }
+            { key: "gni", label: "Gross National Income (GNI)", color: "#ec4899", desc: "Total domestic and foreign output claimed by residents.", unit: "B", invert: false },
+            { key: "gni_per_capita", label: "GNI per capita", color: "#f43f5e", desc: "GNI divided by midyear population.", unit: "$", invert: false },
+            { key: "inflation_rate", label: "Inflation Rate", color: "#ef4444", desc: "Annual inflation rate (Consumer Prices %).", unit: "%", invert: true },
+            { key: "unemployment_rate", label: "Unemployment Rate", color: "#d946ef", desc: "Unemployment, total (% of total labor force).", unit: "%", invert: true },
+            { key: "poverty_ratio", label: "Poverty Headcount Ratio", color: "#c026d3", desc: "Poverty headcount ratio at $2.15 a day (% of population).", unit: "%", invert: true }
         ]
     },
     {
@@ -17,8 +20,11 @@ export const THEMATIC_PILLARS = [
         color: 'text-blue-500',
         bg: 'bg-blue-50',
         indicators: [
-            { key: "life_expectancy", label: "Life Expectancy", color: "#3b82f6", desc: "Average number of years a newborn is expected to live." },
-            { key: "literacy_rate", label: "Literacy Rate", color: "#f59e0b", desc: "Percentage of people ages 15 and above who can read and write." }
+            { key: "life_expectancy", label: "Life Expectancy", color: "#3b82f6", desc: "Average number of years a newborn is expected to live.", unit: "Years", invert: false },
+            { key: "literacy_rate", label: "Literacy Rate", color: "#2563eb", desc: "Percentage of people ages 15 and above who can read and write.", unit: "%", invert: false },
+            { key: "population", label: "Population, total", color: "#0ea5e9", desc: "Total population.", unit: "M", invert: false },
+            { key: "fertility_rate", label: "Fertility Rate", color: "#0284c7", desc: "Total births per woman.", unit: "Births", invert: false },
+            { key: "infant_mortality", label: "Infant Mortality Rate", color: "#38bdf8", desc: "Infant mortality rate (per 1,000 live births).", unit: "/1k", invert: true }
         ]
     },
     {
@@ -28,8 +34,9 @@ export const THEMATIC_PILLARS = [
         color: 'text-emerald-500',
         bg: 'bg-emerald-50',
         indicators: [
-            { key: "gini", label: "Gini Index", color: "#10b981", desc: "Measures the extent to which the distribution of income deviates from a perfectly equal distribution." },
-            { key: "homicide_rate", label: "Intentional Homicide Rate", color: "#ef4444", desc: "Intentional homicides per 100,000 people." }
+            { key: "gini", label: "Gini Index", color: "#10b981", desc: "Measures the extent to which the distribution of income deviates from a perfectly equal distribution.", unit: "", invert: true },
+            { key: "homicide_rate", label: "Intentional Homicide Rate", color: "#059669", desc: "Intentional homicides per 100,000 people.", unit: "/100k", invert: true },
+            { key: "gpi", label: "Gender Parity Index (GPI)", color: "#34d399", desc: "School enrollment, primary and secondary, gender parity index.", unit: "", invert: false }
         ]
     },
     {
@@ -39,7 +46,10 @@ export const THEMATIC_PILLARS = [
         color: 'text-violet-500',
         bg: 'bg-violet-50',
         indicators: [
-            { key: "pm25", label: "PM2.5 Air Pollution", color: "#8b5cf6", desc: "Mean annual exposure to fine particulate matter." }
+            { key: "pm25", label: "PM2.5 Air Pollution", color: "#8b5cf6", desc: "Mean annual exposure to fine particulate matter.", unit: "µg/m³", invert: true },
+            { key: "co2_emissions", label: "CO2 Emissions", color: "#7c3aed", desc: "CO2 emissions (metric tons per capita).", unit: "Tons/Capita", invert: true },
+            { key: "electricity_access", label: "Access to Electricity", color: "#6d28d9", desc: "Access to electricity (% of population).", unit: "%", invert: false },
+            { key: "internet_usage", label: "Internet Penetration", color: "#a78bfa", desc: "Individuals using the Internet (% of population).", unit: "%", invert: false }
         ]
     }
 ];
