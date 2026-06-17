@@ -238,7 +238,7 @@ export default function Home() {
                     <div className="z-10">
                         <h3 className="font-bold text-indigo-200 text-xs xl:text-sm tracking-wide uppercase mb-1 xl:mb-2">Quick Start Analysis</h3>
                         <p className="text-lg xl:text-2xl font-black tracking-tight leading-tight mb-2 xl:mb-4 text-white">
-                            Start comparing countries instantly across <span className="text-blue-200">7 key indicators</span>.
+                            Start comparing countries instantly across <span className="text-blue-200">17 key indicators</span>.
                         </p>
                     </div>
                     <button

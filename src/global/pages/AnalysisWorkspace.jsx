@@ -80,7 +80,17 @@ const globalMaxValues = {
     "literacy_rate": 100,
     "pm25": 100,
     "gni": 30000000000000, // 30 Trillion
-    "gni_per_capita": 150000
+    "gni_per_capita": 150000,
+    "inflation_rate": 200,
+    "unemployment_rate": 50,
+    "poverty_ratio": 100,
+    "population": 1500000000,
+    "fertility_rate": 10,
+    "infant_mortality": 150,
+    "gpi": 2.5,
+    "co2_emissions": 50,
+    "electricity_access": 100,
+    "internet_usage": 100
 };
 
 export default function Analysis() {
