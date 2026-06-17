@@ -80,7 +80,7 @@ function DataDirectory() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://127.0.0.1:5000/api/data/global?year=${year}`);
+        const response = await axios.get(`/api/data/global?year=${year}`);
         
         // Response is { "CountryName": { ...data }, ... }
         const rawDataMap = response.data;

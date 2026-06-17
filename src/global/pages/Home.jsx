@@ -117,7 +117,7 @@ export default function Home() {
 
         const fetchAggregates = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:5000/api/data/aggregates');
+                const response = await axios.get('/api/data/aggregates');
                 setAggregates(response.data);
             } catch (error) {
                 console.error("Failed to fetch global aggregates", error);

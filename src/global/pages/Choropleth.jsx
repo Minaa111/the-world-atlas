@@ -86,7 +86,7 @@ export default function Choropleth() {
         // We use an abort controller to prevent race conditions if the user scrubs the slider fast
         const controller = new AbortController();
         
-        fetch(`http://127.0.0.1:5000/api/data/global?year=${year}`, { signal: controller.signal })
+        fetch(`/api/data/global?year=${year}`, { signal: controller.signal })
             .then(res => res.json())
             .then(data => {
                 setGlobalData(data);
