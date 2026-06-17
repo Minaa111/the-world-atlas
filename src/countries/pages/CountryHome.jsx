@@ -104,7 +104,7 @@ export default function CountryHome() {
 
     useEffect(() => {
         if (!config) {
-            navigate('/country/usa');
+            navigate('/country/aus');
             return;
         }
 

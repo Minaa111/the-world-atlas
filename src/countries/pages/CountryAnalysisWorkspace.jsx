@@ -79,7 +79,7 @@ export default function CountryAnalysisWorkspace() {
     const [customColors, setCustomColors] = useState(() => JSON.parse(localStorage.getItem(`${countryId}AnalysisCustomColors`)) || {});
 
     useEffect(() => {
-        if (!config) navigate('/country/usa');
+        if (!config) navigate('/country/aus');
     }, [config, navigate]);
 
     useEffect(() => {

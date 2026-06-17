@@ -65,7 +65,7 @@ function Navbar() {
                   Global View
                 </button>
                 <button 
-                  onClick={() => handleScopeChange('country', 'usa')}
+                  onClick={() => handleScopeChange('country', activeCountry || 'aus')}
                   className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors text-left ${scope === 'country' ? 'bg-[#EBE9FC] text-[#010104]' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                   <MapPin size={16} />

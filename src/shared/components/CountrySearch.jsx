@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { countries } from "../../global/data/countries";
-import { Search, ArrowDown, MapPin } from "lucide-react";
+import { Search, ChevronDown, MapPin } from "lucide-react";
 import { useScope } from "../context/ScopeContext";
+import { Listbox, Transition } from '@headlessui/react';
 
 // Currently we only have the USA, Canada, and Australia implemented.
 const AVAILABLE_COUNTRIES = ["US", "CA", "AU"];
@@ -44,34 +45,70 @@ export default function CountrySearch() {
         changeScope('country', country.iso3.toLowerCase());
     };
 
+    const currentCountryData = availableCountriesData.find(c => c.iso3.toLowerCase() === activeCountry);
+
     return (
         <div className="relative w-64 lg:w-80" ref={containerRef}>
-            <div className="relative">
-                <input 
-                    type="text"
-                    placeholder="Search country or ISO..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#EBE9FC] bg-[#F9F8FF] focus:outline-none focus:ring-2 focus:ring-[#3A31D8]/50 text-sm font-semibold text-[#010104] placeholder:text-gray-400 transition-shadow"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => setIsOpen(true)}
-                    onClick={() => setIsOpen(true)}
-                />
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
+            <button 
+                className="w-full flex items-center gap-3 bg-[#F9F8FF] border border-[#EBE9FC] px-4 py-2.5 rounded-xl text-sm font-bold text-[#010104] hover:bg-[#EBE9FC] transition-colors"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                {currentCountryData && (
+                    <img src={`https://flagcdn.com/w40/${currentCountryData.iso2.toLowerCase()}.png`} alt="flag" className="w-6 h-4 object-cover rounded shadow-sm" />
+                )}
+                <span className="flex-1 text-left">{currentCountryData ? currentCountryData.name : 'Select Country'}</span>
+                <ChevronDown size={16} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
 
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-[#EBE9FC] overflow-hidden flex flex-col z-50 max-h-[400px]">
-                    <div className="p-3 border-b border-[#EBE9FC] bg-gray-50 flex items-center gap-2">
+                    <div className="p-3 border-b border-[#EBE9FC] bg-white relative">
+                        <input 
+                            type="text"
+                            placeholder="Search country or ISO..."
+                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-[#EBE9FC] bg-[#F9F8FF] focus:outline-none focus:ring-2 focus:ring-[#3A31D8]/50 text-sm font-semibold text-[#010104] placeholder:text-gray-400"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            autoFocus
+                        />
+                        <Search size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <div className="px-3 py-2 border-b border-[#EBE9FC] bg-gray-50 flex items-center justify-between gap-2">
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Filter:</span>
-                        <div className="relative w-full">
-                            <select
-                                value={activeContinent}
-                                onChange={(e) => setActiveContinent(e.target.value)}
-                                className="w-full pl-3 pr-8 py-1.5 rounded-lg border border-[#EBE9FC] bg-white focus:outline-none focus:ring-1 focus:ring-[#3A31D8]/50 text-xs font-bold text-[#010104] appearance-none cursor-pointer"
-                            >
-                                {continents.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                            <ArrowDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <div className="w-32 relative">
+                            <Listbox value={activeContinent} onChange={setActiveContinent}>
+                                <Listbox.Button className="w-full flex justify-between items-center bg-white border border-[#EBE9FC] px-3 py-1.5 rounded-lg text-xs font-bold text-[#010104] shadow-sm hover:border-indigo-300 transition-colors">
+                                    <span className="truncate">{activeContinent}</span>
+                                    <ChevronDown size={12} className="text-gray-400" />
+                                </Listbox.Button>
+                                <Transition
+                                    as={React.Fragment}
+                                    leave="transition ease-in duration-100"
+                                    leaveFrom="opacity-100"
+                                    leaveTo="opacity-0"
+                                >
+                                    <Listbox.Options modal={false} className="absolute z-[100] mt-1 w-full max-h-48 overflow-auto rounded-lg bg-white py-1 text-xs shadow-lg ring-1 ring-black/5 focus:outline-none border border-[#EBE9FC]">
+                                        {continents.map((c) => (
+                                            <Listbox.Option
+                                                key={c}
+                                                className={({ active }) =>
+                                                    `relative cursor-default select-none py-2 pl-3 pr-4 ${
+                                                        active ? 'bg-indigo-50 text-indigo-700' : 'text-gray-900'
+                                                    }`
+                                                }
+                                                value={c}
+                                            >
+                                                {({ selected }) => (
+                                                    <span className={`block truncate ${selected ? 'font-bold text-indigo-700' : 'font-semibold'}`}>
+                                                        {c}
+                                                    </span>
+                                                )}
+                                            </Listbox.Option>
+                                        ))}
+                                    </Listbox.Options>
+                                </Transition>
+                            </Listbox>
                         </div>
                     </div>
 
