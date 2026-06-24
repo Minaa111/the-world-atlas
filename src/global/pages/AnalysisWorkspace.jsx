@@ -4,7 +4,7 @@ import { X, Plus, Map as MapIcon, List, LineChart, Hexagon, Sparkles, Download, 
 import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
-import { getDimensionsList, getDimensionsMap } from '../../shared/config/indicators';
+import { getDimensionsList, getDimensionsMap, THEMATIC_PILLARS } from '../../shared/config/indicators';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Chart as ChartJS,
@@ -119,6 +119,7 @@ export default function Analysis() {
     const [modalTab, setModalTab] = useState("globe");
     const [viewTab, setViewTab] = useState("time"); // 'time', 'radar', or 'scatter'
     const [activeDimension, setActiveDimension] = useState(() => localStorage.getItem('analysisActiveDimension') || "Gross National Income (GNI)");
+    const [chartThemeTab, setChartThemeTab] = useState('all');
     
     // We import dimensionsMap here to validate localStorage because scatter keys must be valid labels
     const [scatterX, setScatterX] = useState(() => {
@@ -442,6 +443,40 @@ export default function Analysis() {
         }
     };
 
+    const radarDimensions = chartThemeTab === 'all' 
+        ? dimensions 
+        : THEMATIC_PILLARS.find(p => p.id === chartThemeTab)?.indicators.map(i => i.label) || dimensions;
+
+    const renderThemeTabs = () => (
+        <div className="w-full flex items-center justify-center mb-4 mt-2 z-20 relative px-4">
+            <div className="flex items-center justify-center gap-1 bg-white p-1 rounded-full border border-[#EBE9FC] shadow-sm w-max">
+                <button
+                    onClick={() => setChartThemeTab('all')}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        chartThemeTab === 'all'
+                            ? 'bg-[#010104] text-white shadow-md'
+                            : 'text-gray-500 hover:text-[#010104] hover:bg-gray-50'
+                    }`}
+                >
+                    All Indicators
+                </button>
+                {THEMATIC_PILLARS.map(pillar => (
+                    <button
+                        key={pillar.id}
+                        onClick={() => setChartThemeTab(pillar.id)}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                            chartThemeTab === pillar.id
+                                ? 'bg-[#010104] text-white shadow-md'
+                                : 'text-gray-500 hover:text-[#010104] hover:bg-gray-50'
+                        }`}
+                    >
+                        {pillar.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
     const renderCanvas = () => {
         if (selectedCountries.length === 0) {
             return (
@@ -546,11 +581,13 @@ export default function Analysis() {
                     />
                 )}
                 {viewTab === "radar" && (
+                    <div className="flex flex-col w-full h-full relative">
+                        {renderThemeTabs()}
                         <RadarView
                             entities={selectedCountries}
                             entityKeyField="iso3"
                             chartData={chartData}
-                            dimensions={dimensions}
+                            dimensions={radarDimensions}
                             dimensionsMap={dimensionsMap}
                             getEntityColor={getEntityColor}
                             formatValue={formatValue}
@@ -560,13 +597,16 @@ export default function Analysis() {
                             hiddenColumns={hiddenColumns}
                             playbackYear={playbackYear}
                         />
+                    </div>
                 )}
                 {viewTab === "polar" && (
+                    <div className="flex flex-col w-full h-full relative">
+                        {renderThemeTabs()}
                         <PolarView
                             entities={selectedCountries}
                             entityKeyField="iso3"
                             chartData={chartData}
-                            dimensions={dimensions}
+                            dimensions={radarDimensions}
                             dimensionsMap={dimensionsMap}
                             getEntityColor={getEntityColor}
                             formatValue={formatValue}
@@ -576,6 +616,7 @@ export default function Analysis() {
                             hiddenColumns={hiddenColumns}
                             playbackYear={playbackYear}
                         />
+                    </div>
                 )}
                 {viewTab === "scatter" && (
                     <CorrelationView

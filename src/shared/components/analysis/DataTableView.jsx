@@ -51,7 +51,7 @@ export default function DataTableView({
                                 const latest = getLatestValues(entity[entityKeyField]);
                                 return (
                                     <tr key={entity[entityKeyField]} className="border-b border-gray-100 hover:bg-[#F9F8FF] transition-colors">
-                                        <td className="p-4 font-bold text-[#010104] flex items-center gap-3 sticky left-0 bg-white z-10 border-r border-[#EBE9FC]">
+                                        <td className="p-4 font-bold text-[#010104] flex items-center gap-3 sticky left-0 bg-white z-10 border-r border-[#EBE9FC] whitespace-nowrap pr-8">
                                             {entity.code && (
                                                 <img
                                                     src={`https://flagcdn.com/w20/${entityKeyField === 'iso3' ? entity.code.toLowerCase() : 'us-' + entity.code.toLowerCase()}.png`}

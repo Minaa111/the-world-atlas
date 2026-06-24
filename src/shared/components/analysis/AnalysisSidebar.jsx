@@ -453,7 +453,7 @@ export default function AnalysisSidebar({
                         <div className="flex flex-col gap-2 p-3 bg-white border border-[#EBE9FC] rounded-xl shadow-sm">
                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Grid Columns</span>
                             <div className="flex bg-gray-50 p-1 rounded-lg">
-                                {[1, 2, 3, 4].map(num => (
+                                {[1, 2, 3].map(num => (
                                     <button
                                         key={num}
                                         onClick={() => setGridCols(num)}
@@ -466,7 +466,6 @@ export default function AnalysisSidebar({
                                         {num === 1 && <Maximize size={14} />}
                                         {num === 2 && <Columns2 size={14} />}
                                         {num === 3 && <Columns3 size={14} />}
-                                        {num === 4 && <Columns4 size={14} />}
                                         {num}
                                     </button>
                                 ))}
