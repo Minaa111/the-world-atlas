@@ -54,12 +54,12 @@ export default function PolarView({
                 const dataPoints = visibleDimensions.map((dim, i) => {
                     if (isMissing[i]) return 100;
                     const raw = latest[dimensionsMap[dim].key];
-                    return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
+                    return Math.min((raw / globalMaxValues[dimensionsMap[dim].key]) * 100, 100);
                 });
 
                 const color = getEntityColor(entity[entityKeyField], idx);
-                const bgColors = visibleDimensions.map((_, i) => isMissing[i] ? 'rgba(229, 231, 235, 0.4)' : color + '80');
-                const bdColors = visibleDimensions.map((_, i) => isMissing[i] ? '#9ca3af' : color);
+                const bgColors = visibleDimensions.map((dim, i) => isMissing[i] ? 'rgba(229, 231, 235, 0.4)' : dimensionsMap[dim].color + '80');
+                const bdColors = visibleDimensions.map((dim, i) => isMissing[i] ? '#9ca3af' : dimensionsMap[dim].color);
 
                 const data = {
                     labels: visibleDimensions,

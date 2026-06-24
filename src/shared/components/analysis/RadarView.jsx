@@ -50,7 +50,7 @@ export default function RadarView({
                 const dataPoints = visibleDimensions.map(dim => {
                     const raw = latest[dimensionsMap[dim].key];
                     if (raw === undefined || raw === null) return null;
-                    return (raw / globalMaxValues[dimensionsMap[dim].key]) * 100;
+                    return Math.min((raw / globalMaxValues[dimensionsMap[dim].key]) * 100, 100);
                 });
 
                 const data = {

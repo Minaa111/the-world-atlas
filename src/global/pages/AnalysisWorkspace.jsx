@@ -88,7 +88,7 @@ const globalMaxValues = {
     "fertility_rate": 10,
     "infant_mortality": 150,
     "gpi": 2.5,
-    "co2_emissions": 50,
+    "co2_emissions": 200,
     "electricity_access": 100,
     "internet_usage": 100
 };
