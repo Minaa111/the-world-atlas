@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { THEMATIC_PILLARS } from '../../shared/config/indicators';
 import { countryRegistry } from '../../countries/config/countryRegistry';
 import { DollarSign, Heart, Shield, Leaf, Globe, Map, AlertTriangle, Database } from 'lucide-react';
@@ -83,7 +84,7 @@ export default function About() {
                 {/* Local Regional Profiles */}
                 <section className="bg-[#010104] rounded-[2.5rem] p-10 md:p-16 relative overflow-hidden text-[#EBE9FC] shadow-2xl">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600 rounded-full blur-[100px] opacity-20"></div>
-                    
+
                     <div className="relative z-10">
                         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                             <div>
@@ -99,11 +100,15 @@ export default function About() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {availableCountries.map(country => (
-                                <div key={country.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors backdrop-blur-sm">
+                                <Link 
+                                    key={country.id} 
+                                    to={`/country/${country.id}`}
+                                    className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors backdrop-blur-sm block"
+                                >
                                     <div className="flex items-center gap-4 mb-4">
                                         <img src={`https://flagcdn.com/w80/${country.iso2.toLowerCase()}.png`} alt={`${country.name} Flag`} className="w-12 h-8 rounded object-cover shadow-sm" />
                                         <div>
-                                            <h3 className="text-xl font-bold text-white">{country.name}</h3>
+                                            <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">{country.name}</h3>
                                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{country.regions.length} Regions</p>
                                         </div>
                                     </div>
@@ -119,7 +124,7 @@ export default function About() {
                                             </span>
                                         )}
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     </div>
