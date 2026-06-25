@@ -222,40 +222,78 @@ export default function CountryAnalysisWorkspace() {
     };
 
     const handleDownloadCSV = () => {
-        if (selectedRegions.length === 0) return;
+        const visibleRegions = selectedRegions.filter(r => !hiddenRegions.has(r.name));
+        if (visibleRegions.length === 0) return;
 
         let csvContent = "data:text/csv;charset=utf-8,";
+        let cols = ["Region", "Code"];
 
-        const cols = ["Region", "Code", "Year", "Is_Forecast"];
-        config.dimensions.forEach(dim => cols.push(dim));
+        let dimensionsToExport = [];
+        let includeForecastCol = false;
+
+        if (viewTab === 'time') {
+            dimensionsToExport = [activeDimension];
+            includeForecastCol = showForecast;
+            if (includeForecastCol) cols.push("Is_Forecast");
+            cols.push(activeDimension, "Year");
+        } else if (viewTab === 'bar') {
+            dimensionsToExport = [activeDimension];
+            cols.push(activeDimension, "Year");
+        } else if (viewTab === 'scatter') {
+            dimensionsToExport = [scatterX, scatterY];
+            cols.push(scatterX, scatterY, "Year");
+        } else if (viewTab === 'radar' || viewTab === 'polar' || viewTab === 'table') {
+            dimensionsToExport = config.dimensions.filter(dim => !hiddenColumns.has(dim));
+            dimensionsToExport.forEach(dim => cols.push(dim));
+            cols.push("Year");
+        }
+
         csvContent += cols.join(",") + "\n";
 
-        selectedRegions.forEach(region => {
+        visibleRegions.forEach(region => {
             const entityId = region.name;
             const cData = chartData[entityId] || [];
-            cData.forEach(row => {
-                if (!showForecast && row.is_forecast) return;
 
-                const rowData = [
-                    `"${region.name}"`,
-                    region.code || region.iso2 || "",
-                    row.year,
-                    row.is_forecast ? "Yes" : "No"
-                ];
+            let rowsToExport = cData;
+            if (viewTab !== 'time') {
+                const targetYear = playbackYear || (availableYears.length > 0 ? availableYears[availableYears.length - 1] : new Date().getFullYear());
+                const rowForYear = cData.find(r => r.year === targetYear);
+                rowsToExport = rowForYear ? [rowForYear] : [];
+            } else if (!showForecast) {
+                rowsToExport = cData.filter(r => !r.is_forecast);
+            }
 
-                config.dimensions.forEach(dim => {
+            rowsToExport.forEach(row => {
+                let hasData = false;
+                const rowData = [`"${region.name}"`, region.code || region.iso2 || ""];
+                
+                if (viewTab === 'time' && includeForecastCol) {
+                    rowData.push(row.is_forecast ? "Yes" : "No");
+                }
+
+                dimensionsToExport.forEach(dim => {
                     const key = config.dimensionsMap[dim].key;
-                    rowData.push(row[key] !== null && row[key] !== undefined ? row[key] : "");
+                    const val = row[key];
+                    if (val !== null && val !== undefined && val !== "") {
+                        hasData = true;
+                        rowData.push(val);
+                    } else {
+                        rowData.push("");
+                    }
                 });
 
-                csvContent += rowData.join(",") + "\n";
+                rowData.push(row.year);
+
+                if (hasData) {
+                    csvContent += rowData.join(",") + "\n";
+                }
             });
         });
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `inequality_atlas_${config.id}_data.csv`);
+        link.setAttribute("download", `the-world-atlas-${config.id}-${viewTab}-data.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
