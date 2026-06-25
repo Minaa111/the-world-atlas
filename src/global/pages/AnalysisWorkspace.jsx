@@ -345,6 +345,7 @@ export default function Analysis() {
             }
 
             rowsToExport.forEach(row => {
+                let hasData = false;
                 const rowData = [`"${country.name}"`, country.iso3];
                 
                 if (viewTab === 'time' && includeForecastCol) {
@@ -353,12 +354,20 @@ export default function Analysis() {
 
                 dimensionsToExport.forEach(dim => {
                     const key = dimensionsMap[dim].key;
-                    rowData.push(row[key] !== null && row[key] !== undefined ? row[key] : "");
+                    const val = row[key];
+                    if (val !== null && val !== undefined && val !== "") {
+                        hasData = true;
+                        rowData.push(val);
+                    } else {
+                        rowData.push("");
+                    }
                 });
 
                 rowData.push(row.year);
 
-                csvContent += rowData.join(",") + "\n";
+                if (hasData) {
+                    csvContent += rowData.join(",") + "\n";
+                }
             });
         });
 
