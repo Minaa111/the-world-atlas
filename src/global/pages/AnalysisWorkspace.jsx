@@ -302,30 +302,61 @@ export default function Analysis() {
     };
 
     const handleDownloadCSV = () => {
-        if (selectedCountries.length === 0) return;
+        const visibleCountries = selectedCountries.filter(c => !hiddenCountries.has(c.iso3));
+        if (visibleCountries.length === 0) return;
 
         let csvContent = "data:text/csv;charset=utf-8,";
+        let cols = ["Country", "ISO3"];
 
-        const cols = ["Country", "ISO3", "Year", "Is_Forecast"];
-        dimensions.forEach(dim => cols.push(dim));
+        let dimensionsToExport = [];
+        let includeForecastCol = false;
+
+        if (viewTab === 'time') {
+            dimensionsToExport = [activeDimension];
+            includeForecastCol = showForecast;
+            if (includeForecastCol) cols.push("Is_Forecast");
+            cols.push(activeDimension, "Year");
+        } else if (viewTab === 'bar') {
+            dimensionsToExport = [activeDimension];
+            cols.push(activeDimension, "Year");
+        } else if (viewTab === 'scatter') {
+            dimensionsToExport = [scatterX, scatterY];
+            cols.push(scatterX, scatterY, "Year");
+        } else if (viewTab === 'radar' || viewTab === 'polar' || viewTab === 'table') {
+            dimensionsToExport = chartThemeTab === 'all' 
+                ? dimensions 
+                : THEMATIC_PILLARS.find(p => p.id === chartThemeTab)?.indicators.map(i => i.label) || dimensions;
+            dimensionsToExport.forEach(dim => cols.push(dim));
+            cols.push("Year");
+        }
+
         csvContent += cols.join(",") + "\n";
 
-        selectedCountries.forEach(country => {
+        visibleCountries.forEach(country => {
             const cData = chartData[country.iso3] || [];
-            cData.forEach(row => {
-                if (!showForecast && row.is_forecast) return;
+            
+            let rowsToExport = cData;
+            if (viewTab !== 'time') {
+                const targetYear = playbackYear || (availableYears.length > 0 ? availableYears[availableYears.length - 1] : new Date().getFullYear());
+                const rowForYear = cData.find(r => r.year === targetYear);
+                rowsToExport = rowForYear ? [rowForYear] : [];
+            } else if (!showForecast) {
+                rowsToExport = cData.filter(r => !r.is_forecast);
+            }
 
-                const rowData = [
-                    `"${country.name}"`,
-                    country.iso3,
-                    row.year,
-                    row.is_forecast ? "Yes" : "No"
-                ];
+            rowsToExport.forEach(row => {
+                const rowData = [`"${country.name}"`, country.iso3];
+                
+                if (viewTab === 'time' && includeForecastCol) {
+                    rowData.push(row.is_forecast ? "Yes" : "No");
+                }
 
-                dimensions.forEach(dim => {
+                dimensionsToExport.forEach(dim => {
                     const key = dimensionsMap[dim].key;
                     rowData.push(row[key] !== null && row[key] !== undefined ? row[key] : "");
                 });
+
+                rowData.push(row.year);
 
                 csvContent += rowData.join(",") + "\n";
             });
@@ -334,7 +365,7 @@ export default function Analysis() {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "inequality_atlas_data.csv");
+        link.setAttribute("download", `inequality_atlas_${viewTab}_data.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
