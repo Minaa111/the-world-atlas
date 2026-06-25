@@ -322,10 +322,14 @@ export default function Analysis() {
         } else if (viewTab === 'scatter') {
             dimensionsToExport = [scatterX, scatterY];
             cols.push(scatterX, scatterY, "Year");
-        } else if (viewTab === 'radar' || viewTab === 'polar' || viewTab === 'table') {
+        } else if (viewTab === 'radar' || viewTab === 'polar') {
             dimensionsToExport = chartThemeTab === 'all' 
                 ? dimensions 
                 : THEMATIC_PILLARS.find(p => p.id === chartThemeTab)?.indicators.map(i => i.label) || dimensions;
+            dimensionsToExport.forEach(dim => cols.push(dim));
+            cols.push("Year");
+        } else if (viewTab === 'table') {
+            dimensionsToExport = dimensions.filter(dim => !hiddenColumns.has(dim));
             dimensionsToExport.forEach(dim => cols.push(dim));
             cols.push("Year");
         }
@@ -374,7 +378,7 @@ export default function Analysis() {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `inequality_atlas_${viewTab}_data.csv`);
+        link.setAttribute("download", `the-world-atlas-${viewTab}-data.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
