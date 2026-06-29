@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "./shared/components/Navbar";
 import Footer from "./shared/components/Footer";
 import Home from "./global/pages/Home";
@@ -7,6 +7,7 @@ import AnalysisWorkspace from "./global/pages/AnalysisWorkspace";
 import About from "./global/pages/About";
 import Choropleth from "./global/pages/Choropleth";
 import DataDirectory from "./global/pages/DataDirectory";
+import MobileBlocker from "./shared/components/MobileBlocker";
 
 // Country Profile
 import CountryHome from "./countries/pages/CountryHome";
@@ -18,10 +19,25 @@ function App() {
   const location = useLocation();
   const isAnalysisPage = location.pathname.includes('/analysis');
   const isChoroplethPage = location.pathname.includes('/choropleth');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  if (isMobile) {
+    return <MobileBlocker />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
