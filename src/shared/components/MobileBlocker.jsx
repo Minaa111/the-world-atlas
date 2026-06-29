@@ -1,4 +1,4 @@
-import { Monitor, Smartphone, Ban } from "lucide-react";
+import { Monitor, Smartphone, Ban, Code, User, Briefcase } from "lucide-react";
 
 export default function MobileBlocker() {
   return (
@@ -28,8 +28,43 @@ export default function MobileBlocker() {
             Please access this platform on a desktop or laptop computer for the best experience.
           </p>
           
-          <div className="text-sm font-medium text-slate-500 uppercase tracking-widest">
+          <div className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-8">
             Minimum width: 1024px
+          </div>
+          
+          <div className="w-full pt-6 border-t border-slate-800/50">
+            <p className="text-sm text-slate-400 mb-4">
+              In the meantime, feel free to explore the project's source code:
+            </p>
+            <div className="flex flex-col space-y-3">
+              <a 
+                href="https://github.com/Minaa111" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center justify-center space-x-2 w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors duration-200"
+              >
+                <User className="w-4 h-4" />
+                <span>Visit My GitHub Profile</span>
+              </a>
+              <a 
+                href="https://www.linkedin.com/in/minaa-aziz/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center justify-center space-x-2 w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition-colors duration-200"
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>Connect on LinkedIn</span>
+              </a>
+              <a 
+                href="https://github.com/Minaa111/the-world-atlas" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center justify-center space-x-2 w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors duration-200 shadow-lg shadow-indigo-900/20"
+              >
+                <Code className="w-4 h-4" />
+                <span>Explore the Repository</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
