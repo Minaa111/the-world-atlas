@@ -31,6 +31,16 @@ export default function Footer() {
                     <div className="flex flex-col md:items-end justify-center gap-6">
                         <div className="flex items-center gap-4">
                             <a 
+                                href="https://github.com/Minaa111/the-world-atlas" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="group flex items-center justify-center w-12 h-12 rounded-full bg-white/5 border border-white/10 hover:bg-indigo-600 hover:border-indigo-600 hover:scale-110 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                                aria-label="Project Repository"
+                                title="Project Repository"
+                            >
+                                <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                            </a>
+                            <a 
                                 href="https://github.com/Minaa111" 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
