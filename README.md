@@ -4,7 +4,8 @@
   <img src="https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white" alt="Chart.js" />
   <img src="https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" />
   <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+  <img src="https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-Learn" />
+  <img src="https://img.shields.io/badge/D3.js-F9A03C?style=for-the-badge&logo=d3.js&logoColor=white" alt="D3.js" />
 </div>
 
 <br />
@@ -16,101 +17,105 @@
     <br />
     <br />
     <a href="https://the-world-atlas.vercel.app"><strong>View Live Platform »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/Minaa111/the-world-atlas"><strong>Repository</strong></a> · 
+    <a href="https://github.com/Minaa111"><strong>GitHub</strong></a> · 
+    <a href="https://www.linkedin.com/in/minaa-aziz/"><strong>LinkedIn</strong></a>
   </p>
+  <br />
+  <img src="https://img.shields.io/badge/Award-Top_80_Graduation_Project_(2026)-FFD700?style=for-the-badge&logo=awesomelists&logoColor=white" alt="Top 80 Graduation Project" />
+  <p align="center"><em>Proudly selected as one of the Top 80 Graduation Projects at Arab Open University (2026).</em></p>
+</div>
+
+<div align="center">
+  <img src="./docs/images/dashboard.png" alt="The World Atlas 3D Globe Dashboard" width="800" />
 </div>
 
 ---
 
-## Project Overview
+## 📖 About The Project
 
-**The World Atlas** is an academic graduate project engineered to make complex global socio-economic data intuitive, accessible, and deeply analytical. It bridges the gap between raw macroeconomic statistics and visually stunning, context-aware user interfaces. 
+**The World Atlas** is a powerful, full-stack web application designed to make complex global socio-economic data intuitive, accessible, and deeply analytical. It bridges the gap between raw statistical data—sourced from organizations like the World Bank—and visually stunning, highly interactive user interfaces. 
 
-By utilizing decades of historical data from the World Bank and other reputable organizations, the platform allows researchers to cross-examine nations on multiple developmental axes simultaneously, and project future trajectories using structural AI forecasting.
+By utilizing over 50 years of historical data, the platform allows researchers to cross-examine nations on multiple developmental axes simultaneously. What truly sets The World Atlas apart is its integration of on-the-fly **Structural AI Forecasting**, empowering users to project future global trajectories instantly.
 
-## Core Features
+---
 
-### Global Navigation & Exploration
-Navigate and select countries using three distinct interface modes tailored for usability:
-*   **3D Globe**: A highly interactive, spinning globe visualization for spatial context.
-*   **2D Map**: A flat geospatial projection for rapid country selection.
-*   **List View**: A streamlined, alphabetical directory of all sovereign states.
+## ✨ Core Features
 
-<!-- Placeholder for Globe/Map Screenshot -->
-> *[Insert screenshot of the 3D Globe or 2D Map here]*
+### 🌍 Multi-Modal Global Navigation
+Navigate and select sovereign states using three distinct interface modes tailored for different spatial workflows:
+- **3D Globe:** A highly interactive, spinning globe visualization for rich spatial context.
+- **2D Map:** A flat geospatial TopoJSON projection for rapid, simultaneous country selection.
+- **List View:** A streamlined, alphabetical directory for quick searching.
 
-### Analysis Workspace
-A dedicated, multi-faceted analytical sandbox to compare global economies using a variety of interactive tools:
-*   **Time Series**: Track historical trajectories and utilize Structural AI Forecasting to predict 5-year future trends.
-*   **Bar Chart**: Conduct direct cross-sectional comparisons between nations for a specific year.
-*   **Radar & Polar Area Views**: Compare countries across multiple thematic indicators simultaneously (e.g., Economic Vitality vs. Human Capital).
-*   **Correlation Scatter**: Map two distinct metrics against each other to identify underlying global correlations.
-*   **Data Table**: Inspect the raw numerical data driving the active visualizations.
-*   **Context-Aware Exporting**: Dynamically export PDF reports and filtered CSV data that perfectly mirrors the active UI state.
+<div align="center">
+  <img src="./docs/images/3d-globe.svg" alt="2D Map Navigation" width="800" />
+</div>
 
-<!-- Placeholder for Analysis Workspace Screenshot -->
-> *[Insert screenshot of the Analysis Workspace (e.g., Radar or Time-Series) here]*
+### 📊 The Analysis Workspace
+A highly complex, state-driven analytical sandbox to compare global economies. Users can cross-examine active dimensions (e.g., Gini Index, PM2.5 Pollution, Life Expectancy) across selected countries using multiple synchronized views:
+- **Time-Series:** Track historical trajectories and overlay AI predictions.
+- **Bar Charts:** Conduct direct cross-sectional comparisons for a specific year.
+- **Radar & Polar Area Views:** Compare countries across multiple thematic indicators simultaneously, normalized against global theoretical maximums.
+- **Correlation Scatter Plots:** Map two distinct metrics against each other to identify underlying global correlations.
+- **Data Table:** Inspect the raw numerical datasets driving the visualizations.
 
-### Global Choropleth
-Visualize a single macroeconomic indicator across the entire planet simultaneously. This feature renders dynamic heatmaps on both the 3D globe and 2D map geometries, allowing for immediate identification of global disparities.
+<div align="center">
+  <img src="./docs/images/radar.png" alt="Radar Chart Analysis" width="800" />
+  <br />
+  <img src="./docs/images/correlation.png" alt="Correlation Scatter Plot" width="800" />
+</div>
 
-<!-- Placeholder for Choropleth Screenshot -->
-> *[Insert screenshot of the Choropleth heatmap here]*
+### 🗺️ Dynamic Choropleth Mapping
+Visualize a single macroeconomic indicator across the entire planet simultaneously. The platform renders dynamic heatmaps across both the 3D globe and 2D map geometries using **D3.js**, allowing for the immediate visual identification of global socio-economic disparities.
 
-### Data Directory
-A centralized hub for exploring the underlying historical datasets, including metadata, statistical distributions, and historical completeness for all tracked indicators.
+<div align="center">
+  <img src="./docs/images/choropleth-3d.png" alt="3D Choropleth Heatmap" width="800" />
+</div>
 
-### Deep-Dive Individual Country Profiles
-Go beyond the global scope with isolated country profiles. This feature provides simulated localized data for specific regions (such as US States, Canadian Provinces, and Australian Territories) and allows you to run them through the exact same Analysis Workspace tools.
+### 🤖 Structural AI Forecasting
+Go beyond historical data. When a user enables AI forecasting, the frontend routes the request to a Python backend where a **Scikit-Learn** Machine Learning pipeline is triggered. The system trains a Linear Regression model on historical data trends and instantly generates a 5-year future trajectory. This simulated AI data is returned and seamlessly merged into the active UI state, clearly differentiating historical truth from predicted outcomes.
 
-<!-- Placeholder for Country Profile Screenshot -->
-> *[Insert screenshot of a deep-dive country profile (e.g., USA states) here]*
+<div align="center">
+  <img src="./docs/images/time-series-forecast-enabled.png" alt="AI Forecast Time Series" width="800" />
+</div>
 
-## Macroeconomic Indicators Tracked
+### 📍 Deep-Dive Individual Country Profiles
+The platform's architecture is built for scalability. To demonstrate its micro-national capabilities, it features isolated profiles for the **USA, Canada, and Australia**. These profiles utilize custom regional mapping geometries (e.g., states, provinces, territories) and simulated localized datasets, all fully integrated into the Analysis Workspace.
 
-The Atlas meticulously tracks 17 distinct macroeconomic and developmental indicators grouped into four core thematic pillars:
+<div align="center">
+  <img src="./docs/images/usa.svg" alt="USA Regional Profile" width="800" />
+</div>
 
-### Economic Vitality
-*   **Gross National Income (GNI)**: Total domestic and foreign output claimed by residents.
-*   **GNI per Capita**: GNI divided by midyear population.
-*   **Inflation Rate**: Annual inflation rate (Consumer Prices %).
-*   **Unemployment Rate**: Unemployment, total (% of total labor force).
-*   **Poverty Headcount Ratio**: Poverty headcount ratio at $2.15 a day (% of population).
+### 🗂️ Data Directory
+A centralized hub for exploring the underlying historical datasets. It provides complete transparency into indicator metadata, statistical distributions, and historical completeness for all 17 tracked dimensions.
 
-### Human Capital & Health
-*   **Life Expectancy**: Average number of years a newborn is expected to live.
-*   **Literacy Rate**: Percentage of people ages 15 and above who can read and write.
-*   **Population**: Total national population.
-*   **Fertility Rate**: Total births per woman.
-*   **Infant Mortality Rate**: Infant mortality rate (per 1,000 live births).
+<div align="center">
+  <img src="./docs/images/data-directory.png" alt="Data Directory" width="800" />
+</div>
 
-### Equity & Safety
-*   **Gini Index**: Measures the extent to which the distribution of income deviates from a perfectly equal distribution.
-*   **Intentional Homicide Rate**: Intentional homicides per 100,000 people.
-*   **Gender Parity Index (GPI)**: School enrollment, primary and secondary, gender parity index.
+---
 
-### Environment & Infrastructure
-*   **PM2.5 Air Pollution**: Mean annual exposure to fine particulate matter (µg/m³).
-*   **CO2 Emissions**: Metric tons per capita.
-*   **Access to Electricity**: Percentage of population with access.
-*   **Internet Penetration**: Individuals using the Internet (% of population).
-
-## Technical Architecture
+## 🛠️ Technical Architecture
 
 ### Frontend Layer
-*   **React + Vite**: For blazing fast HMR and optimized production bundling.
-*   **TailwindCSS**: For a strictly modern, dark-mode-first glassmorphism design system.
-*   **Chart.js / React-Chartjs-2**: The core engine powering the reactive data canvases.
-*   **D3.js & TopoJSON**: For rendering the interactive SVG-based choropleth mapping geometries.
+- **React + Vite:** For blazing-fast Hot Module Replacement and optimized production bundling.
+- **TailwindCSS:** Driving a strictly modern, dark-mode-first glassmorphism design system.
+- **Chart.js & React-Chartjs-2:** The core rendering engine powering the reactive data canvases.
+- **D3.js & TopoJSON:** Generating the complex, interactive SVG-based mapping geometries.
 
 ### Backend Layer
-*   **Flask (Python)**: Serving as a lightweight API gateway and data router.
-*   **SQLite3**: Providing ultra-fast read-heavy database querying for over half a century of historical data.
-*   **Random Walk Algorithms**: Generating logical bounding forecasts to simulate AI trajectory predictions on historical variance.
+- **Flask (Python):** Serving as an ultra-fast, lightweight API gateway and data router.
+- **SQLite3 & SQLAlchemy:** Providing rapid, read-heavy database querying for over half a century of macroeconomic data.
+- **Scikit-Learn:** Generating on-the-fly Linear Regression models to power the structural AI forecasting engine.
+- **Flask-Caching:** Implementing in-memory caching to drastically reduce load times for complex data aggregations.
 
-## Academic Disclaimer
+---
 
-The World Atlas is strictly an **academic graduate project** and is not intended to serve as an official or institutional resource. 
+## ⚠️ Disclaimer
+**The World Atlas** is an academic graduate project and is not intended to serve as an official or institutional resource. While global historical data is sourced from reputable organizations, the platform employs structural AI forecasting and random-walk algorithms to simulate future trajectories and local regional data (for countries like the USA, Canada, and Australia).
 
-While pre-2023 historical data is sourced from real-world aggregators (like the World Bank), the platform employs structural AI forecasting to simulate post-2023 future trajectories. Furthermore, localized regional data for countries like the USA, Canada, and Australia are generated via mock data arrays.
-
-**Users are encouraged to interpret this platform strictly as a technical demonstration of full-stack analytical visualization capabilities, and not as a source of accurate future global projections.**
+Therefore, individual state/province mock data and any future global projections (post-2023) should not be interpreted as accurate real-world statistics.
+**Users are encouraged to interpret this platform as a technical demonstration of full-stack analytical visualization and machine learning integration, rather than a source of official global projections.**
